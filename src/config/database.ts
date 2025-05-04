@@ -8,11 +8,15 @@ import { Notification } from '../modules/notifications/entities/notification.ent
 import { Role } from '../modules/auth/entities/role.entity';
 import { UserPreferences } from '../modules/users/entities/user-preferences.entity';
 import { ProjectMember } from '../modules/projects/entities/project-member.entity';
+import dotenv from 'dotenv';
+import { TeamInvite } from '../modules/teams/entities/team-invite.entity';
+
+dotenv.config();
 
 // Import all other entities...
 
 export const AppDataSource = new DataSource({
-  type: 'postgres',
+  type: 'mysql',
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT || '5432'),
   username: process.env.DB_USER || 'eyobed',
@@ -25,11 +29,12 @@ export const AppDataSource = new DataSource({
     Project,
     Team,
     TeamMember,
+    TeamInvite,
     Notification,
     Role,
     UserPreferences,
     ProjectMember,
-
+    
 
     // Add all other entities...
   ],

@@ -9,17 +9,18 @@ import { json, urlencoded } from 'body-parser';
 import { DataSource } from 'typeorm';
 import { AppDataSource } from './config/database';
 import { logger } from './config/logger';
-import { rateLimiter } from '../middlewares/rate-limiter';
-import { errorHandler } from '../middlewares/error-handler';
-import { authRouter } from './modules/auth/routes';
-import { userRouter } from './modules/users/routes';
-import { projectRouter } from './modules/projects/routes';
-import { taskRouter } from './modules/tasks/routes';
-import { teamRouter } from './modules/teams/routes';
-import { notificationRouter } from './modules/notifications/routes';
-import { analyticsRouter } from './modules/analytics/routes';
-import { reportRouter } from './modules/reports/routes';
-import { initializeBackgroundJobs } from './jobs';
+import { rateLimiter } from './middlewares/rate-limiter';
+import { errorHandler } from './middlewares/error-handler';
+import authRouter  from '../src/modules/auth/routes';
+import userRouter  from '../src/modules/users/routes';
+import projectRouter  from '../src/modules/projects/routes';
+import taskRouter  from '../src/modules/tasks/routes';
+import  teamRouter  from '../src/modules/teams/routes';
+import  notificationRouter  from '../src/modules/notifications/routes';
+import  analyticsRouter from '../src/modules/analytics/routes';
+import  reportRouter  from '../src/modules/reports/routes';
+import { createConnection } from 'mysql2/promise'; // install if not yet: npm install mysql2
+import  {initializeBackgroundJobs } from './jobs';
 
 class AppServer {
   private app: Application;
@@ -40,14 +41,25 @@ class AppServer {
 
   private async initializeDatabase(): Promise<void> {
     try {
+      const dbName = 'collaboration_platform';
+      const connection = await createConnection({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+      });
+  
+      await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\`;`);
+      await connection.end();
+  
       await AppDataSource.initialize();
       logger.info('Database connected successfully');
-
+  
       if (process.env.NODE_ENV === 'production') {
         await AppDataSource.runMigrations();
         logger.info('Migrations executed');
       }
     } catch (error) {
+      console.error(error);
       logger.error('Database connection failed', error);
       process.exit(1);
     }
