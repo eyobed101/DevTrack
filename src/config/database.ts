@@ -1,0 +1,43 @@
+// src/config/database.ts
+import { DataSource } from 'typeorm';
+import { User } from '../modules/users/entities/user.entity';
+import { Project } from '../modules/projects/entities/project.entity';
+import { Team } from '../modules/teams/entities/team.entity';
+import { TeamMember } from '../modules/teams/entities/team-member.entity';
+import { Notification } from '../modules/notifications/entities/notification.entity';
+import { Role } from '../modules/auth/entities/role.entity';
+import { UserPreferences } from '../modules/users/entities/user-preferences.entity';
+import { ProjectMember } from '../modules/projects/entities/project-member.entity';
+
+// Import all other entities...
+
+export const AppDataSource = new DataSource({
+  type: 'postgres',
+  host: process.env.DB_HOST || 'localhost',
+  port: parseInt(process.env.DB_PORT || '5432'),
+  username: process.env.DB_USER || 'eyobed',
+  password: process.env.DB_PASSWORD || 'pass',
+  database: process.env.DB_NAME || 'collaboration_platform',
+  synchronize: process.env.NODE_ENV !== 'production',
+  logging: process.env.NODE_ENV === 'development',
+  entities: [
+    User,
+    Project,
+    Team,
+    TeamMember,
+    Notification,
+    Role,
+    UserPreferences,
+    ProjectMember,
+
+
+    // Add all other entities...
+  ],
+  migrations: ['src/migrations/*.ts'],
+  subscribers: [],
+  extra: {
+    ssl: process.env.DB_SSL === 'true' ? {
+      rejectUnauthorized: false
+    } : false
+  }
+});
