@@ -7,6 +7,7 @@ import { Team } from '../../teams/entities/team.entity';
 import { Project } from '../../projects/entities/project.entity';
 import { ProjectMember } from '../../projects/entities/project-member.entity';
 import { Notification } from '../../notifications/entities/notification.entity';
+import { Task } from '../../tasks/entities/task.entity';
 
 @Entity()
 export class User {
@@ -57,6 +58,13 @@ export class User {
 
   @OneToMany(() => TeamMember, teamMember => teamMember.user)
   teamMemberships: TeamMember[];
+
+  @OneToMany(() => Task, (task) => task.assignee)
+  assignedTasks: Task[];
+
+  @OneToMany(() => Task, (task) => task.reporter)
+  reportedTasks: Task[];
+
 
   @ManyToMany(() => Role, role => role.users)
   @JoinTable()

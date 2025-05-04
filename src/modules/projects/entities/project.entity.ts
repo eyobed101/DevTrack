@@ -2,6 +2,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { ProjectMember } from './project-member.entity';
+import { Label } from '../../tasks/entities/label.entity';
 
 export enum ProjectStatus {
   PLANNING = 'planning',
@@ -34,6 +35,9 @@ export class Project {
     default: ProjectStatus.PLANNING
   })
   status: ProjectStatus;
+
+  @OneToMany(() => Label, (label) => label.project)
+  labels: Label[];
 
   @Column({ nullable: true })
   startDate?: Date;
