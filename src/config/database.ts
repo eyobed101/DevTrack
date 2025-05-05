@@ -10,6 +10,10 @@ import { UserPreferences } from '../modules/users/entities/user-preferences.enti
 import { ProjectMember } from '../modules/projects/entities/project-member.entity';
 import dotenv from 'dotenv';
 import { TeamInvite } from '../modules/teams/entities/team-invite.entity';
+import { Label } from '../modules/tasks/entities/label.entity';
+import { Task } from '../modules/tasks/entities/task.entity';
+import { Subtask } from '../modules/tasks/entities/subtask.entity';
+import { Comment } from '../modules/tasks/entities/comment.entity';
 
 dotenv.config();
 
@@ -31,6 +35,10 @@ export const AppDataSource = new DataSource({
     TeamMember,
     TeamInvite,
     Notification,
+    Label,
+    Task,
+    Subtask,
+    Comment,
     Role,
     UserPreferences,
     ProjectMember,

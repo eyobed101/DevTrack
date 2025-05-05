@@ -3,6 +3,7 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, CreateDat
 import { User } from '../../users/entities/user.entity';
 import { ProjectMember } from './project-member.entity';
 import { Label } from '../../tasks/entities/label.entity';
+import { Task } from '../../tasks/entities/task.entity';
 
 export enum ProjectStatus {
   PLANNING = 'planning',
@@ -38,6 +39,14 @@ export class Project {
 
   @OneToMany(() => Label, (label) => label.project)
   labels: Label[];
+
+  @OneToMany(() => User, (user) => user.projects)
+  users: User[];
+
+  
+
+  @OneToMany(() => Task, (task) => task.project)
+  tasks: Task[];
 
   @Column({ nullable: true })
   startDate?: Date;
