@@ -18,6 +18,7 @@ import { Subtask } from './subtask.entity';
 import { Comment } from './comment.entity';
 import { Label } from './label.entity';
 import { TaskStatus, TaskPriority } from '../task.enum';
+import { TimeTracking } from '../../analytics/entities/time-tracking.entity';
 
 @Entity()
 export class Task {
@@ -61,6 +62,9 @@ export class Task {
 
   @Column({ type: 'float', nullable: true })
   estimatedHours: number | null;
+  
+  @OneToMany(() => TimeTracking, (timeEntry) => timeEntry.task)
+  timeEntries: TimeTracking[];
 
   @Column({ type: 'float', nullable: true })
   actualHours: number | null;

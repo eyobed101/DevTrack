@@ -44,7 +44,6 @@ export const AppDataSource = new DataSource({
     ProjectMember,
     
 
-    // Add all other entities...
   ],
   migrations: ['src/migrations/*.ts'],
   subscribers: [],
