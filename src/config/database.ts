@@ -14,6 +14,7 @@ import { Label } from '../modules/tasks/entities/label.entity';
 import { Task } from '../modules/tasks/entities/task.entity';
 import { Subtask } from '../modules/tasks/entities/subtask.entity';
 import { Comment } from '../modules/tasks/entities/comment.entity';
+import TimeTracking from '../modules/analytics/entities/time-tracking.entity';
 
 dotenv.config();
 
@@ -42,6 +43,8 @@ export const AppDataSource = new DataSource({
     Role,
     UserPreferences,
     ProjectMember,
+    TimeTracking
+
     
 
   ],

@@ -7,6 +7,13 @@ export interface AnalyticsParams {
     endDate?: string;
   }
 
+export interface getTeamPerformanceMetrics {
+  userId: string;
+  projectId?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
 export interface TaskTimeSummary {
   taskId: string | null;
   taskName: string;
@@ -46,3 +53,4 @@ export interface DailyTrend {
   completed: number;
   created: number;
 }
+

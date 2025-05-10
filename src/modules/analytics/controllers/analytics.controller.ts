@@ -20,7 +20,8 @@ export class AnalyticsController {
     this.analyticsService = new AnalyticsService(
       timeTrackingRepository,
       taskRepository,
-      userRepository
+      userRepository,
+    
     );
   }
 
