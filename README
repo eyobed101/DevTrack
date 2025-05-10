@@ -1,0 +1,38 @@
+# DevTrack
+
+DevTrack is a robust collaboration platform designed to streamline project management, team collaboration, and task tracking. It provides features like user authentication, project and team management, notifications, and analytics.
+
+## Features
+
+- **User Authentication**: Secure login, registration, and token-based authentication.
+- **Project Management**: Create, manage, and track projects with roles and statuses.
+- **Team Collaboration**: Manage teams, invites, and roles for effective teamwork.
+- **Task Tracking**: Assign tasks, set deadlines, and monitor progress.
+- **Notifications**: Stay updated with real-time notifications for tasks, projects, and teams.
+- **Analytics and Reports**: Gain insights into project performance and team productivity.
+- **Background Jobs**: Handle scheduled tasks and asynchronous operations.
+
+## Tech Stack
+
+- **Backend**: Node.js, Express.js, TypeORM, PostgreSQL
+- **Frontend**: Next.js, React
+- **Other Tools**: Joi for validation, Helmet for security, Morgan for logging, and more.
+
+## Project Structure
+
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js (v16+)
+- PostgreSQL
+- pnpm (preferred package manager)
+
+### Backend Setup
+
+1. Navigate to the `backend` directory:
+   ```bash
+   cd backend
+   npm install
+   npm run typeorm migration:run
