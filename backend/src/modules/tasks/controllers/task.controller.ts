@@ -17,6 +17,15 @@ export class TaskController {
     const userRepository = AppDataSource.getRepository(User);
     const projectRepository = AppDataSource.getRepository(Project);
     this.taskService = new TaskService(taskRepository, userRepository, projectRepository);
+
+    this.getAllTasks = this.getAllTasks.bind(this);
+    this.getTaskById = this.getTaskById.bind(this);
+    this.createTask = this.createTask.bind(this);
+    this.updateTask = this.updateTask.bind(this);
+    this.deleteTask = this.deleteTask.bind(this);
+    this.assignTask = this.assignTask.bind(this);
+ 
+
   }
 
   async getAllTasks(req: Request, res: Response): Promise<void> {

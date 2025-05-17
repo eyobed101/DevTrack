@@ -13,6 +13,12 @@ export class UserController {
   constructor() {
     const userRepository = AppDataSource.getRepository(User);
     this.userService = new UserService(userRepository);
+
+    this.getAllUsers = this.getAllUsers.bind(this);
+    this.getUserById = this.getUserById.bind(this);
+    this.createUser = this.createUser.bind(this);
+    this.updateUser = this.updateUser.bind(this);
+    this.deleteUser = this.deleteUser.bind(this);
   }
 
   async getAllUsers(req: Request, res: Response): Promise<void> {

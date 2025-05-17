@@ -16,6 +16,12 @@ export class NotificationController {
     const notificationRepository = AppDataSource.getRepository(Notification);
     const userRepository = AppDataSource.getRepository(User);
     this.notificationService = new NotificationService(notificationRepository, userRepository);
+  
+    this.getAllNotifications = this.getAllNotifications.bind(this);
+    this.sendNotification = this.sendNotification.bind(this);
+    this.markAsRead = this.markAsRead.bind(this);
+    this.markAllAsRead = this.markAllAsRead.bind(this);
+    
   }
 
   async getAllNotifications(req: Request, res: Response): Promise<void> {

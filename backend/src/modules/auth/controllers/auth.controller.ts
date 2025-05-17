@@ -18,6 +18,13 @@ export class AuthController {
     const userRepository = AppDataSource.getRepository(User);
     this.authService = new AuthService(userRepository);
     this.userService = new UserService(userRepository);
+
+    this.login = this.login.bind(this);
+    this.register = this.register.bind(this);
+    this.logout = this.logout.bind(this);
+    this.refreshToken = this.refreshToken.bind(this);
+    this.getCurrentUser = this.getCurrentUser.bind(this);
+    
   }
 
  

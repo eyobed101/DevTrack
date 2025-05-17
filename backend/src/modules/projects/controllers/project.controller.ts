@@ -15,6 +15,15 @@ export class ProjectController {
     const projectRepository = AppDataSource.getRepository(Project);
     const userRepository = AppDataSource.getRepository(User);
     this.projectService = new ProjectService(projectRepository, userRepository);
+
+    this.getAllProjects = this.getAllProjects.bind(this);
+    this.getProjectById = this.getProjectById.bind(this);
+    this.createProject = this.createProject.bind(this);
+    this.updateProject = this.updateProject.bind(this);
+    this.deleteProject = this.deleteProject.bind(this);
+    this.addMember = this.addMember.bind(this);
+    this.removeMember = this.removeMember.bind(this);
+
   }
 
   async getAllProjects(req: Request, res: Response): Promise<void> {

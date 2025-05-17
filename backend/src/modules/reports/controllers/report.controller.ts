@@ -18,6 +18,12 @@ export class ReportController {
     const userRepository = AppDataSource.getRepository(User);
     const projectRepository = AppDataSource.getRepository(Project);
     this.reportService = new ReportService(reportRepository, userRepository, projectRepository);
+    
+    this.getAllReports = this.getAllReports.bind(this);
+    this.generateReport = this.generateReport.bind(this);
+    this.exportReport = this.exportReport.bind(this);
+    this.getContentType = this.getContentType.bind(this);
+  
   }
 
   async getAllReports(req: Request, res: Response): Promise<void> {

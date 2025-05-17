@@ -7,17 +7,16 @@ import { hashPassword } from '../../common/utils/password';
 export class UserService {
   constructor(private userRepository: Repository<User>) {}
 
+
+
+  async findByEmail(email: string): Promise<User | null> {
+    return this.userRepository.findOneBy({ email });
+  }
+
   async findAll(page: number, limit: number): Promise<User[]> {
     return this.userRepository.find({
       skip: (page - 1) * limit,
       take: limit,
-      relations: ['roles', 'preferences']
-    });
-  }
-
-  async findByEmail(email: string): Promise<User | null> {
-    return this.userRepository.findOne({
-      where: { email },
       relations: ['roles', 'preferences']
     });
   }
