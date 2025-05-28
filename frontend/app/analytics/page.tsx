@@ -3,7 +3,7 @@
 import React, { useState } from "react"
 import { useParams } from "next/navigation"
 // import { LineChart, PieChart } from "@/components/ui/chart"
-import { Area, AreaChart, CartesianGrid, Pie, PieChart, XAxis } from "recharts"
+import { Area, AreaChart, CartesianGrid, LineChart, Pie, PieChart, XAxis } from "recharts"
 
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
@@ -188,41 +188,41 @@ export default function AnalyticsPage() {
                             <div className="container mx-auto px-6">
                                 <div className="flex flex-col gap-6">
                                     {/* Filters */}
+                                    {/* Filters */}
                                     <Card>
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2">
-                                                <Filter className="h-5 w-5" /> Analytics Filters
+                                                <Filter className="h-5 w-5" />
+                                                <span>Analytics Filters</span>
                                             </CardTitle>
                                         </CardHeader>
                                         <CardContent>
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                {/* Date Range Picker */}
                                                 <div className="space-y-2">
-                                                    {/* <Label>Date Range</Label>
-                          <DateRangePicker
-                            selected={dateRange}
-                            onSelect={setDateRange}
-                          /> */}
                                                     <Popover>
                                                         <PopoverTrigger asChild>
                                                             <Button
                                                                 variant={"outline"}
                                                                 className={cn(
-                                                                    "w-[280px] justify-start text-left font-normal",
+                                                                    "w-full justify-start text-left font-normal",
                                                                     !dateRange && "text-muted-foreground"
                                                                 )}
                                                             >
                                                                 <CalendarIcon className="mr-2 h-4 w-4" />
-                                                                {dateRange.from && dateRange.to
-                                                                    ? `${format(dateRange.from, "PPP")} - ${format(dateRange.to, "PPP")}`
-                                                                    : <span>Pick a date</span>}
+                                                                {dateRange?.from && dateRange?.to ? (
+                                                                    `${format(dateRange.from, "PPP")} - ${format(dateRange.to, "PPP")}`
+                                                                ) : (
+                                                                    <span>Pick a date</span>
+                                                                )}
                                                             </Button>
                                                         </PopoverTrigger>
                                                         <PopoverContent className="w-auto p-0">
                                                             <Calendar
                                                                 mode="range"
                                                                 selected={dateRange}
-                                                                onSelect={range => {
-                                                                    if (range && range.from && range.to) {
+                                                                onSelect={(range) => {
+                                                                    if (range?.from && range?.to) {
                                                                         setDateRange({ from: range.from, to: range.to });
                                                                     }
                                                                 }}
@@ -231,18 +231,20 @@ export default function AnalyticsPage() {
                                                         </PopoverContent>
                                                     </Popover>
                                                 </div>
-                                                <div className="space-y-2">
+
+                                                {/* Team Selector */}
+                                                <div className="space-x-2 flex items-center">
                                                     <Label>Team</Label>
                                                     <Select
                                                         value={selectedTeam}
                                                         onValueChange={setSelectedTeam}
                                                     >
-                                                        <SelectTrigger>
+                                                        <SelectTrigger className="w-full">
                                                             <SelectValue placeholder="Select team" />
                                                         </SelectTrigger>
                                                         <SelectContent>
                                                             <SelectItem value="all">All Teams</SelectItem>
-                                                            {mockTeams.map(team => (
+                                                            {mockTeams.map((team) => (
                                                                 <SelectItem key={team.id} value={team.id}>
                                                                     {team.name}
                                                                 </SelectItem>
@@ -250,18 +252,20 @@ export default function AnalyticsPage() {
                                                         </SelectContent>
                                                     </Select>
                                                 </div>
-                                                <div className="space-y-2">
+
+                                                {/* Project Selector */}
+                                                <div className="space-x-2 flex items-center">
                                                     <Label>Project</Label>
                                                     <Select
                                                         value={selectedProject}
                                                         onValueChange={setSelectedProject}
                                                     >
-                                                        <SelectTrigger>
+                                                        <SelectTrigger className="w-full">
                                                             <SelectValue placeholder="Select project" />
                                                         </SelectTrigger>
                                                         <SelectContent>
                                                             <SelectItem value="all">All Projects</SelectItem>
-                                                            {mockProjects.map(project => (
+                                                            {mockProjects.map((project) => (
                                                                 <SelectItem key={project.id} value={project.id}>
                                                                     {project.name}
                                                                 </SelectItem>
@@ -282,17 +286,7 @@ export default function AnalyticsPage() {
                                         </CardHeader>
                                         <CardContent>
                                             <div className="h-80">
-                                                {/* <LineChart
-                                                    data={filteredData.burndown}
-                                                    xAxisKey="date"
-                                                    yAxisKeys={['tasksRemaining']}
-                                                    lineNames={['Tasks Remaining']}
-                                                    colors={['#3b82f6']}
-                                                    tooltipFormatter={(value: number, name: string) => [
-                                                        `${value} tasks`,
-                                                        name === 'Tasks Remaining' ? 'Remaining Tasks' : name
-                                                    ]}
-                                                /> */}
+                                                
                                                 <ChartContainer
                                                     config={chartConfig}
                                                     className="aspect-auto h-[250px] w-full"
@@ -409,63 +403,7 @@ export default function AnalyticsPage() {
                                                             name
                                                         ]}
                                                     /> */}
-                                                    <ChartContainer
-                                                        config={chartConfig}
-                                                        className="mx-auto aspect-square max-h-[250px]"
-                                                    >
-                                                        <PieChart>
-                                                            <ChartTooltip
-                                                                cursor={false}
-                                                                content={<ChartTooltipContent hideLabel />}
-                                                            />
-                                                            <Pie
-                                                                data={filteredData.individualContributions.map(member => ({
-                                                                    name: member.userName,
-                                                                    value: member.contributionPercentage
-                                                                }))} dataKey="visitors"
-                                                                nameKey="browser"
-                                                                innerRadius={60}
-                                                                strokeWidth={5}
-                                                            >
-                                                                <Label
-                                                                    content={({
-                                                                        viewBox,
-                                                                    }: {
-                                                                        viewBox?: {
-                                                                            cx?: number
-                                                                            cy?: number
-                                                                        }
-                                                                    }) => {
-                                                                        if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                                                                            return (
-                                                                                <text
-                                                                                    x={viewBox.cx}
-                                                                                    y={viewBox.cy}
-                                                                                    textAnchor="middle"
-                                                                                    dominantBaseline="middle"
-                                                                                >
-                                                                                    <tspan
-                                                                                        x={viewBox.cx}
-                                                                                        y={viewBox.cy}
-                                                                                        className="fill-foreground text-3xl font-bold"
-                                                                                    >
-                                                                                        {totalVisitors.toLocaleString()}
-                                                                                    </tspan>
-                                                                                    <tspan
-                                                                                        x={viewBox.cx}
-                                                                                        y={(viewBox.cy || 0) + 24}
-                                                                                        className="fill-muted-foreground"
-                                                                                    >
-                                                                                        Visitors
-                                                                                    </tspan>
-                                                                                </text>
-                                                                            )
-                                                                        }
-                                                                    }}
-                                                                />
-                                                            </Pie>
-                                                        </PieChart>
-                                                    </ChartContainer>
+                                                  
                                                 </div>
                                                 <div className="space-y-4">
                                                     <h3 className="font-medium">Detailed Breakdown</h3>

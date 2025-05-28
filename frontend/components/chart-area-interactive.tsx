@@ -2,13 +2,14 @@
 
 import * as React from "react"
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
-
+import { IconUsers, IconCheck, IconClock, IconTrendingUp, IconTrendingDown } from "@tabler/icons-react"
 import { useIsMobile } from "@/hooks/use-mobile"
 import {
   Card,
   CardAction,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -29,185 +30,214 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@/components/ui/toggle-group"
+import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
 
-export const description = "An interactive area chart"
+// Types for analytics data
+type AnalyticsData = {
+  date: string
+  completedTasks: number
+  activeTasks: number
+  timeSpent: number
+  teamProductivity: number
+  teamCollaboration: number
+}
 
-const chartData = [
-  { date: "2024-04-01", desktop: 222, mobile: 150 },
-  { date: "2024-04-02", desktop: 97, mobile: 180 },
-  { date: "2024-04-03", desktop: 167, mobile: 120 },
-  { date: "2024-04-04", desktop: 242, mobile: 260 },
-  { date: "2024-04-05", desktop: 373, mobile: 290 },
-  { date: "2024-04-06", desktop: 301, mobile: 340 },
-  { date: "2024-04-07", desktop: 245, mobile: 180 },
-  { date: "2024-04-08", desktop: 409, mobile: 320 },
-  { date: "2024-04-09", desktop: 59, mobile: 110 },
-  { date: "2024-04-10", desktop: 261, mobile: 190 },
-  { date: "2024-04-11", desktop: 327, mobile: 350 },
-  { date: "2024-04-12", desktop: 292, mobile: 210 },
-  { date: "2024-04-13", desktop: 342, mobile: 380 },
-  { date: "2024-04-14", desktop: 137, mobile: 220 },
-  { date: "2024-04-15", desktop: 120, mobile: 170 },
-  { date: "2024-04-16", desktop: 138, mobile: 190 },
-  { date: "2024-04-17", desktop: 446, mobile: 360 },
-  { date: "2024-04-18", desktop: 364, mobile: 410 },
-  { date: "2024-04-19", desktop: 243, mobile: 180 },
-  { date: "2024-04-20", desktop: 89, mobile: 150 },
-  { date: "2024-04-21", desktop: 137, mobile: 200 },
-  { date: "2024-04-22", desktop: 224, mobile: 170 },
-  { date: "2024-04-23", desktop: 138, mobile: 230 },
-  { date: "2024-04-24", desktop: 387, mobile: 290 },
-  { date: "2024-04-25", desktop: 215, mobile: 250 },
-  { date: "2024-04-26", desktop: 75, mobile: 130 },
-  { date: "2024-04-27", desktop: 383, mobile: 420 },
-  { date: "2024-04-28", desktop: 122, mobile: 180 },
-  { date: "2024-04-29", desktop: 315, mobile: 240 },
-  { date: "2024-04-30", desktop: 454, mobile: 380 },
-  { date: "2024-05-01", desktop: 165, mobile: 220 },
-  { date: "2024-05-02", desktop: 293, mobile: 310 },
-  { date: "2024-05-03", desktop: 247, mobile: 190 },
-  { date: "2024-05-04", desktop: 385, mobile: 420 },
-  { date: "2024-05-05", desktop: 481, mobile: 390 },
-  { date: "2024-05-06", desktop: 498, mobile: 520 },
-  { date: "2024-05-07", desktop: 388, mobile: 300 },
-  { date: "2024-05-08", desktop: 149, mobile: 210 },
-  { date: "2024-05-09", desktop: 227, mobile: 180 },
-  { date: "2024-05-10", desktop: 293, mobile: 330 },
-  { date: "2024-05-11", desktop: 335, mobile: 270 },
-  { date: "2024-05-12", desktop: 197, mobile: 240 },
-  { date: "2024-05-13", desktop: 197, mobile: 160 },
-  { date: "2024-05-14", desktop: 448, mobile: 490 },
-  { date: "2024-05-15", desktop: 473, mobile: 380 },
-  { date: "2024-05-16", desktop: 338, mobile: 400 },
-  { date: "2024-05-17", desktop: 499, mobile: 420 },
-  { date: "2024-05-18", desktop: 315, mobile: 350 },
-  { date: "2024-05-19", desktop: 235, mobile: 180 },
-  { date: "2024-05-20", desktop: 177, mobile: 230 },
-  { date: "2024-05-21", desktop: 82, mobile: 140 },
-  { date: "2024-05-22", desktop: 81, mobile: 120 },
-  { date: "2024-05-23", desktop: 252, mobile: 290 },
-  { date: "2024-05-24", desktop: 294, mobile: 220 },
-  { date: "2024-05-25", desktop: 201, mobile: 250 },
-  { date: "2024-05-26", desktop: 213, mobile: 170 },
-  { date: "2024-05-27", desktop: 420, mobile: 460 },
-  { date: "2024-05-28", desktop: 233, mobile: 190 },
-  { date: "2024-05-29", desktop: 78, mobile: 130 },
-  { date: "2024-05-30", desktop: 340, mobile: 280 },
-  { date: "2024-05-31", desktop: 178, mobile: 230 },
-  { date: "2024-06-01", desktop: 178, mobile: 200 },
-  { date: "2024-06-02", desktop: 470, mobile: 410 },
-  { date: "2024-06-03", desktop: 103, mobile: 160 },
-  { date: "2024-06-04", desktop: 439, mobile: 380 },
-  { date: "2024-06-05", desktop: 88, mobile: 140 },
-  { date: "2024-06-06", desktop: 294, mobile: 250 },
-  { date: "2024-06-07", desktop: 323, mobile: 370 },
-  { date: "2024-06-08", desktop: 385, mobile: 320 },
-  { date: "2024-06-09", desktop: 438, mobile: 480 },
-  { date: "2024-06-10", desktop: 155, mobile: 200 },
-  { date: "2024-06-11", desktop: 92, mobile: 150 },
-  { date: "2024-06-12", desktop: 492, mobile: 420 },
-  { date: "2024-06-13", desktop: 81, mobile: 130 },
-  { date: "2024-06-14", desktop: 426, mobile: 380 },
-  { date: "2024-06-15", desktop: 307, mobile: 350 },
-  { date: "2024-06-16", desktop: 371, mobile: 310 },
-  { date: "2024-06-17", desktop: 475, mobile: 520 },
-  { date: "2024-06-18", desktop: 107, mobile: 170 },
-  { date: "2024-06-19", desktop: 341, mobile: 290 },
-  { date: "2024-06-20", desktop: 408, mobile: 450 },
-  { date: "2024-06-21", desktop: 169, mobile: 210 },
-  { date: "2024-06-22", desktop: 317, mobile: 270 },
-  { date: "2024-06-23", desktop: 480, mobile: 530 },
-  { date: "2024-06-24", desktop: 132, mobile: 180 },
-  { date: "2024-06-25", desktop: 141, mobile: 190 },
-  { date: "2024-06-26", desktop: 434, mobile: 380 },
-  { date: "2024-06-27", desktop: 448, mobile: 490 },
-  { date: "2024-06-28", desktop: 149, mobile: 200 },
-  { date: "2024-06-29", desktop: 103, mobile: 160 },
-  { date: "2024-06-30", desktop: 446, mobile: 400 },
-]
+// Fixed mock data generation with consistent results
+const generateMockData = (days: number): AnalyticsData[] => {
+  const data: AnalyticsData[] = []
+  const fixedDate = new Date('2024-06-30') // Fixed reference date
+  
+  for (let i = days - 1; i >= 0; i--) {
+    const date = new Date(fixedDate)
+    date.setDate(date.getDate() - i)
+    
+    // Deterministic "randomness" based on date
+    const seed = date.getTime() % 10000
+    const baseTasks = 5 + (seed % 10)
+    const dayFactor = (date.getDay() === 0 || date.getDay() === 6) ? 0.5 : 1
+    const variation = 0.8 + (seed % 40) / 100
+    
+    data.push({
+      date: date.toISOString().split('T')[0],
+      completedTasks: Math.floor(baseTasks * dayFactor * variation),
+      activeTasks: Math.floor(baseTasks * 1.5 * variation),
+      timeSpent: Math.floor(baseTasks * 0.5 * variation),
+      teamProductivity: 70 + (seed % 30),
+      teamCollaboration: 60 + (seed % 40),
+    })
+  }
+  
+  return data
+}
+
+// Pre-generate all mock data at module level
+const MOCK_DATA = {
+  "7d": generateMockData(7),
+  "30d": generateMockData(30),
+  "90d": generateMockData(90)
+}
 
 const chartConfig = {
-  visitors: {
-    label: "Visitors",
-  },
-  desktop: {
-    label: "Desktop",
+  completedTasks: {
+    label: "Completed Tasks",
     color: "var(--primary)",
+    icon: IconCheck
   },
-  mobile: {
-    label: "Mobile",
-    color: "var(--primary)",
+  activeTasks: {
+    label: "Active Tasks",
+    color: "var(--secondary)",
+    icon: IconUsers
+  },
+  timeSpent: {
+    label: "Time Spent (hrs)",
+    color: "var(--accent)",
+    icon: IconClock
+  },
+  teamProductivity: {
+    label: "Productivity %",
+    color: "var(--success)",
+    icon: IconTrendingUp
+  },
+  teamCollaboration: {
+    label: "Collaboration %",
+    color: "var(--info)",
+    icon: IconUsers
   },
 } satisfies ChartConfig
 
+// Consistent date formatting
+const formatDate = (dateString: string, formatStr: string) => {
+  const date = new Date(dateString)
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    weekday: formatStr === 'EEE' ? 'short' : undefined,
+    timeZone: 'UTC' // Ensure consistent timezone
+  }).format(date)
+}
+
 export function ChartAreaInteractive() {
+  const [isMounted, setIsMounted] = React.useState(false)
   const isMobile = useIsMobile()
-  const [timeRange, setTimeRange] = React.useState("90d")
+  const [timeRange, setTimeRange] = React.useState("30d")
+  const [metric, setMetric] = React.useState<keyof typeof chartConfig>("completedTasks")
 
   React.useEffect(() => {
+    setIsMounted(true)
     if (isMobile) {
       setTimeRange("7d")
     }
   }, [isMobile])
 
-  const filteredData = chartData.filter((item) => {
-    const date = new Date(item.date)
-    const referenceDate = new Date("2024-06-30")
-    let daysToSubtract = 90
-    if (timeRange === "30d") {
-      daysToSubtract = 30
-    } else if (timeRange === "7d") {
-      daysToSubtract = 7
-    }
-    const startDate = new Date(referenceDate)
-    startDate.setDate(startDate.getDate() - daysToSubtract)
-    return date >= startDate
-  })
+  if (!isMounted) {
+    return (
+      <Card className="@container/card">
+        <CardHeader>
+          <CardTitle>Collaboration Analytics</CardTitle>
+          <Skeleton className="h-[250px] w-full" />
+        </CardHeader>
+      </Card>
+    )
+  }
+
+  const filteredData = MOCK_DATA[timeRange as keyof typeof MOCK_DATA]
+  const currentMetricConfig = chartConfig[metric]
+
+  const calculateTrend = () => {
+    if (filteredData.length < 2) return 0
+    const firstValue = filteredData[0][metric]
+    const lastValue = filteredData[filteredData.length - 1][metric]
+    if (firstValue === 0) return 0
+    return ((lastValue - firstValue) / firstValue) * 100
+  }
+
+  const trend = calculateTrend()
+  const totalValue = filteredData.reduce((sum, item) => sum + item[metric], 0)
+  const avgValue = Math.round(totalValue / filteredData.length)
 
   return (
     <Card className="@container/card">
-      <CardHeader>
-        <CardTitle>Total Visitors</CardTitle>
+      <CardHeader className="space-y-4">
+    {/* Top row - Title and Metric Selector */}
+    <div className="flex flex-col gap-4 @sm/card:flex-row @sm/card:items-center @sm/card:justify-between">
+      <div className="space-y-1">
+        <CardTitle>Collaboration Analytics</CardTitle>
         <CardDescription>
-          <span className="hidden @[540px]/card:block">
-            Total for the last 3 months
-          </span>
-          <span className="@[540px]/card:hidden">Last 3 months</span>
+          {currentMetricConfig.label} over time
         </CardDescription>
-        <CardAction>
-          <ToggleGroup
-            type="single"
-            value={timeRange}
-            onValueChange={setTimeRange}
-            variant="outline"
-            className="hidden *:data-[slot=toggle-group-item]:!px-4 @[767px]/card:flex"
+      </div>
+      
+      <div className="w-full @sm/card:w-auto">
+        <Select value={metric} onValueChange={(v) => setMetric(v as keyof typeof chartConfig)}>
+          <SelectTrigger className="w-full @sm/card:w-[180px]">
+            <SelectValue placeholder="Select metric" />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(chartConfig).map(([key, config]) => (
+              <SelectItem key={key} value={key}>
+                <div className="flex items-center">
+                  {config.icon && React.createElement(config.icon, { className: "h-4 w-4 mr-1" })}
+                  {config.label}
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+
+    {/* Bottom row - Stats and Time Controls */}
+    <CardAction className="flex flex-col gap-4 @sm/card:flex-row @sm/card:items-center @sm/card:justify-between">
+      <div className="flex items-center gap-4">
+        <div>
+          <div className="text-2xl font-semibold tabular-nums">
+            {avgValue}
+            {(metric === 'teamProductivity' || metric === 'teamCollaboration') ? '%' : ''}
+          </div>
+          {/* <div className="text-sm text-muted-foreground">Average</div> */}
+        </div>
+        <Badge variant={trend >= 0 ? "outline" : "destructive"}>
+          {trend >= 0 ? <IconTrendingUp className="h-4 w-4 mr-1" /> : <IconTrendingDown className="h-4 w-4 mr-1" />}
+          {Math.abs(trend).toFixed(1)}%
+        </Badge>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <ToggleGroup
+          type="single"
+          value={timeRange}
+          onValueChange={setTimeRange}
+          variant="outline"
+          className="hidden *:data-[slot=toggle-group-item]:!px-4 @[767px]/card:flex"
+        >
+          <ToggleGroupItem value="90d">3 Months</ToggleGroupItem>
+          <ToggleGroupItem value="30d">30 Days</ToggleGroupItem>
+          <ToggleGroupItem value="7d">7 Days</ToggleGroupItem>
+        </ToggleGroup>
+        <Select value={timeRange} onValueChange={setTimeRange}>
+          <SelectTrigger
+            className="flex w-40 **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate @[767px]/card:hidden"
+            size="sm"
+            aria-label="Select time range"
           >
-            <ToggleGroupItem value="90d">Last 3 months</ToggleGroupItem>
-            <ToggleGroupItem value="30d">Last 30 days</ToggleGroupItem>
-            <ToggleGroupItem value="7d">Last 7 days</ToggleGroupItem>
-          </ToggleGroup>
-          <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger
-              className="flex w-40 **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate @[767px]/card:hidden"
-              size="sm"
-              aria-label="Select a value"
-            >
-              <SelectValue placeholder="Last 3 months" />
-            </SelectTrigger>
-            <SelectContent className="rounded-xl">
-              <SelectItem value="90d" className="rounded-lg">
-                Last 3 months
-              </SelectItem>
-              <SelectItem value="30d" className="rounded-lg">
-                Last 30 days
-              </SelectItem>
-              <SelectItem value="7d" className="rounded-lg">
-                Last 7 days
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </CardAction>
-      </CardHeader>
+            <SelectValue placeholder="30 Days" />
+          </SelectTrigger>
+          <SelectContent className="rounded-xl">
+            <SelectItem value="90d" className="rounded-lg">
+              3 Months
+            </SelectItem>
+            <SelectItem value="30d" className="rounded-lg">
+              30 Days
+            </SelectItem>
+            <SelectItem value="7d" className="rounded-lg">
+              7 Days
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    </CardAction>
+  </CardHeader>
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
         <ChartContainer
           config={chartConfig}
@@ -215,27 +245,15 @@ export function ChartAreaInteractive() {
         >
           <AreaChart data={filteredData}>
             <defs>
-              <linearGradient id="fillDesktop" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id="fillColor" x1="0" y1="0" x2="0" y2="1">
                 <stop
                   offset="5%"
-                  stopColor="var(--color-desktop)"
-                  stopOpacity={1.0}
-                />
-                <stop
-                  offset="95%"
-                  stopColor="var(--color-desktop)"
-                  stopOpacity={0.1}
-                />
-              </linearGradient>
-              <linearGradient id="fillMobile" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor="var(--color-mobile)"
+                  stopColor={currentMetricConfig.color}
                   stopOpacity={0.8}
                 />
                 <stop
                   offset="95%"
-                  stopColor="var(--color-mobile)"
+                  stopColor={currentMetricConfig.color}
                   stopOpacity={0.1}
                 />
               </linearGradient>
@@ -247,46 +265,42 @@ export function ChartAreaInteractive() {
               axisLine={false}
               tickMargin={8}
               minTickGap={32}
-              tickFormatter={(value) => {
-                const date = new Date(value)
-                return date.toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                })
-              }}
+              tickFormatter={(value) => formatDate(value, timeRange === "7d" ? "EEE" : "MMM d")}
             />
             <ChartTooltip
               cursor={false}
-              defaultIndex={isMobile ? -1 : 10}
               content={
                 <ChartTooltipContent
-                  labelFormatter={(value) => {
-                    return new Date(value).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    })
-                  }}
+                  labelFormatter={(value) => formatDate(value, "MMM d, yyyy")}
                   indicator="dot"
+                  // If ChartTooltipContent supports a "formatter" or similar prop, use it; otherwise, handle formatting inside the component.
                 />
               }
             />
             <Area
-              dataKey="mobile"
-              type="natural"
-              fill="url(#fillMobile)"
-              stroke="var(--color-mobile)"
-              stackId="a"
-            />
-            <Area
-              dataKey="desktop"
-              type="natural"
-              fill="url(#fillDesktop)"
-              stroke="var(--color-desktop)"
-              stackId="a"
+              type="monotone"
+              dataKey={metric}
+              stroke={currentMetricConfig.color}
+              fill="url(#fillColor)"
+              strokeWidth={2}
             />
           </AreaChart>
         </ChartContainer>
       </CardContent>
+      <CardFooter className="flex flex-wrap gap-4">
+        <div className="flex items-center gap-2">
+          <div className="h-3 w-3 rounded-full" style={{ backgroundColor: "var(--primary)" }} />
+          <span className="text-sm">Completed Tasks: {filteredData.reduce((sum, item) => sum + item.completedTasks, 0)}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="h-3 w-3 rounded-full" style={{ backgroundColor: "var(--secondary)" }} />
+          <span className="text-sm">Active Tasks: {filteredData.reduce((sum, item) => sum + item.activeTasks, 0)}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="h-3 w-3 rounded-full" style={{ backgroundColor: "var(--accent)" }} />
+          <span className="text-sm">Total Hours: {filteredData.reduce((sum, item) => sum + item.timeSpent, 0)}</span>
+        </div>
+      </CardFooter>
     </Card>
   )
 }

@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/sidebar"
 
 import data from "./data.json"
+import Overview from "@/components/overview"
 
 export default function Page() {
   return (
@@ -30,7 +31,8 @@ export default function Page() {
               <div className="px-4 lg:px-6">
                 <ChartAreaInteractive />
               </div>
-              <DataTable data={data} />
+              <Overview />
+              {/* <DataTable data={data} /> */}
             </div>
           </div>
         </div>

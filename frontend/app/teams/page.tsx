@@ -35,10 +35,13 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Plus, MoreVertical, Mail, Trash2, Shield, User } from "lucide-react"
+import { Plus, MoreVertical, Mail, Trash2, Shield, User, Users, Settings, PlusCircle } from "lucide-react"
 import { toast } from "sonner"
+import { Textarea } from "@/components/ui/textarea"
 
-// Types matching your TypeORM entities
+// Enhanced Types
+type TeamCategory = 'PROJECT' | 'DEPARTMENT' | 'COMMUNITY' | 'TASK_FORCE' | 'OTHER'
+
 type User = {
   id: string
   name: string
@@ -50,6 +53,8 @@ type Team = {
   id: string
   name: string
   description: string
+  category: TeamCategory
+  purpose?: string
   owner: User
   members: TeamMember[]
   invites: TeamInvite[]
@@ -78,12 +83,14 @@ enum TeamRole {
   MEMBER = "MEMBER"
 }
 
-// Mock data based on your schema
+// Mock data with categories and purposes
 const mockTeams: Team[] = [
   {
     id: "1",
     name: "Design Team",
     description: "Responsible for all design projects",
+    category: "DEPARTMENT",
+    purpose: "Oversee all design work across products",
     owner: {
       id: "1",
       name: "Alex Johnson",
@@ -112,6 +119,35 @@ const mockTeams: Team[] = [
         },
         role: TeamRole.ADMIN,
         joinedAt: new Date("2023-02-20")
+      }
+    ],
+    invites: [],
+    createdAt: new Date("2023-01-10"),
+    updatedAt: new Date()
+  },
+  {
+    id: "2",
+    name: "Mobile App Project",
+    description: "Development of the new mobile application",
+    category: "PROJECT",
+    purpose: "Deliver the new mobile app by Q3",
+    owner: {
+      id: "1",
+      name: "Alex Johnson",
+      email: "alex@example.com",
+      avatar: "/avatars/01.png"
+    },
+    members: [
+      {
+        id: "1",
+        user: {
+          id: "1",
+          name: "Alex Johnson",
+          email: "alex@example.com",
+          avatar: "/avatars/01.png"
+        },
+        role: TeamRole.OWNER,
+        joinedAt: new Date("2023-03-01")
       },
       {
         id: "3",
@@ -121,35 +157,95 @@ const mockTeams: Team[] = [
           email: "taylor@example.com"
         },
         role: TeamRole.MEMBER,
-        joinedAt: new Date("2023-03-10")
+        joinedAt: new Date("2023-03-15")
       }
     ],
     invites: [
       {
         id: "1",
-        email: "new@example.com",
+        email: "dev@example.com",
         role: TeamRole.MEMBER,
         expiresAt: new Date("2023-12-31"),
         createdAt: new Date()
       }
     ],
-    createdAt: new Date("2023-01-10"),
+    createdAt: new Date("2023-03-01"),
     updatedAt: new Date()
-  },
-  // ... other teams
+  }
+]
+
+const categoryOptions = [
+  { value: 'PROJECT', label: 'Project Team' },
+  { value: 'DEPARTMENT', label: 'Department' },
+  { value: 'COMMUNITY', label: 'Community' },
+  { value: 'TASK_FORCE', label: 'Task Force' },
+  { value: 'OTHER', label: 'Other' }
 ]
 
 export default function TeamsPage() {
   const router = useRouter()
+  const [teams, setTeams] = useState<Team[]>(mockTeams)
   const [currentTeam, setCurrentTeam] = useState<Team>(mockTeams[0])
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false)
+  const [isCreateTeamDialogOpen, setIsCreateTeamDialogOpen] = useState(false)
   const [email, setEmail] = useState("")
   const [role, setRole] = useState<TeamRole>(TeamRole.MEMBER)
+  
+  // New team form state
+  const [newTeam, setNewTeam] = useState({
+    name: "",
+    description: "",
+    category: "PROJECT" as TeamCategory,
+    purpose: ""
+  })
+
+  // Handle team creation
+  const handleCreateTeam = (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    const createdTeam: Team = {
+      id: `team-${Math.random().toString(36).substr(2, 9)}`,
+      name: newTeam.name,
+      description: newTeam.description,
+      category: newTeam.category,
+      purpose: newTeam.purpose,
+      owner: {
+        id: "1", // Current user's ID
+        name: "Alex Johnson",
+        email: "alex@example.com",
+        avatar: "/avatars/01.png"
+      },
+      members: [{
+        id: "1",
+        user: {
+          id: "1",
+          name: "Alex Johnson",
+          email: "alex@example.com",
+          avatar: "/avatars/01.png"
+        },
+        role: TeamRole.OWNER,
+        joinedAt: new Date()
+      }],
+      invites: [],
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+
+    setTeams([...teams, createdTeam])
+    setCurrentTeam(createdTeam)
+    setNewTeam({
+      name: "",
+      description: "",
+      category: "PROJECT",
+      purpose: ""
+    })
+    setIsCreateTeamDialogOpen(false)
+    toast.success(`Team "${createdTeam.name}" created successfully`)
+  }
 
   const handleInviteMember = (e: React.FormEvent) => {
     e.preventDefault()
     
-    // In a real app, you would call an API endpoint here
     const newInvite: TeamInvite = {
       id: `invite-${Math.random().toString(36).substr(2, 9)}`,
       email,
@@ -158,11 +254,14 @@ export default function TeamsPage() {
       createdAt: new Date()
     }
 
-    setCurrentTeam({
-      ...currentTeam,
-      invites: [...currentTeam.invites, newInvite]
-    })
+    const updatedTeams = teams.map(team => 
+      team.id === currentTeam.id 
+        ? { ...team, invites: [...team.invites, newInvite] }
+        : team
+    )
 
+    setTeams(updatedTeams)
+    setCurrentTeam(updatedTeams.find(t => t.id === currentTeam.id)!)
     toast.success(`Invite sent to ${email}`)
     setEmail("")
     setIsInviteDialogOpen(false)
@@ -174,12 +273,20 @@ export default function TeamsPage() {
       return
     }
 
-    setCurrentTeam({
-      ...currentTeam,
-      members: currentTeam.members.map(member => 
-        member.id === memberId ? { ...member, role: newRole } : member
-      )
-    })
+    const updatedTeams = teams.map(team => 
+      team.id === currentTeam.id
+        ? {
+            ...team,
+            members: team.members.map(member => 
+              member.id === memberId ? { ...member, role: newRole } : member
+            ),
+            updatedAt: new Date()
+          }
+        : team
+    )
+
+    setTeams(updatedTeams)
+    setCurrentTeam(updatedTeams.find(t => t.id === currentTeam.id)!)
     toast.success("Role updated successfully")
   }
 
@@ -189,19 +296,47 @@ export default function TeamsPage() {
       return
     }
 
-    setCurrentTeam({
-      ...currentTeam,
-      members: currentTeam.members.filter(member => member.id !== memberId)
-    })
+    const updatedTeams = teams.map(team => 
+      team.id === currentTeam.id
+        ? {
+            ...team,
+            members: team.members.filter(member => member.id !== memberId),
+            updatedAt: new Date()
+          }
+        : team
+    )
+
+    setTeams(updatedTeams)
+    setCurrentTeam(updatedTeams.find(t => t.id === currentTeam.id)!)
     toast.success("Member removed")
   }
 
   const handleRevokeInvite = (inviteId: string) => {
-    setCurrentTeam({
-      ...currentTeam,
-      invites: currentTeam.invites.filter(invite => invite.id !== inviteId)
-    })
+    const updatedTeams = teams.map(team => 
+      team.id === currentTeam.id
+        ? {
+            ...team,
+            invites: team.invites.filter(invite => invite.id !== inviteId),
+            updatedAt: new Date()
+          }
+        : team
+    )
+
+    setTeams(updatedTeams)
+    setCurrentTeam(updatedTeams.find(t => t.id === currentTeam.id)!)
     toast.success("Invite revoked")
+  }
+
+  const handleDeleteTeam = (teamId: string) => {
+    if (teams.length <= 1) {
+      toast.error("You must have at least one team")
+      return
+    }
+
+    const updatedTeams = teams.filter(team => team.id !== teamId)
+    setTeams(updatedTeams)
+    setCurrentTeam(updatedTeams[0])
+    toast.success("Team deleted successfully")
   }
 
   const getRoleBadge = (role: TeamRole) => {
@@ -215,6 +350,23 @@ export default function TeamsPage() {
     return (
       <Badge variant={variant as any} className="capitalize">
         {icon}
+        {label}
+      </Badge>
+    )
+  }
+
+  const getCategoryBadge = (category: TeamCategory) => {
+    const categoryMap = {
+      PROJECT: { label: "Project", variant: "default" },
+      DEPARTMENT: { label: "Department", variant: "secondary" },
+      COMMUNITY: { label: "Community", variant: "outline" },
+      TASK_FORCE: { label: "Task Force", variant: "destructive" },
+      OTHER: { label: "Other", variant: "outline" }
+    }
+    
+    const { label, variant } = categoryMap[category]
+    return (
+      <Badge variant={variant as any}>
         {label}
       </Badge>
     )
@@ -235,25 +387,109 @@ export default function TeamsPage() {
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-2">
             <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-              {/* Team Header */}
+              {/* Team Header with Create Team Button */}
               <div className="flex justify-between items-center mx-6">
                 <h1 className="text-2xl font-bold">Team Management</h1>
                 <div className="flex gap-2">
                   <Select
                     value={currentTeam.id}
-                    onValueChange={(value) => setCurrentTeam(mockTeams.find(t => t.id === value)!)}
+                    onValueChange={(value) => setCurrentTeam(teams.find(t => t.id === value)!)}
                   >
                     <SelectTrigger className="w-[200px]">
                       <SelectValue placeholder="Select team" />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockTeams.map(team => (
+                      {teams.map(team => (
                         <SelectItem key={team.id} value={team.id}>
-                          {team.name}
+                          <div className="flex items-center gap-2">
+                            <span>{team.name}</span>
+                            {getCategoryBadge(team.category)}
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  
+                  <Dialog open={isCreateTeamDialogOpen} onOpenChange={setIsCreateTeamDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline">
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Create Team
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[600px]">
+                      <DialogHeader>
+                        <DialogTitle>Create New Team</DialogTitle>
+                      </DialogHeader>
+                      <form onSubmit={handleCreateTeam} className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="name" className="text-right">
+                            Team Name
+                          </Label>
+                          <Input
+                            id="name"
+                            value={newTeam.name}
+                            onChange={(e) => setNewTeam({...newTeam, name: e.target.value})}
+                            className="col-span-3"
+                            required
+                          />
+                        </div>
+                        
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="category" className="text-right">
+                            Category
+                          </Label>
+                          <Select
+                            value={newTeam.category}
+                            onValueChange={(value) => setNewTeam({...newTeam, category: value as TeamCategory})}
+                          >
+                            <SelectTrigger className="col-span-3">
+                              <SelectValue placeholder="Select category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {categoryOptions.map(option => (
+                                <SelectItem key={option.value} value={option.value}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="purpose" className="text-right">
+                            Purpose
+                          </Label>
+                          <Input
+                            id="purpose"
+                            value={newTeam.purpose}
+                            onChange={(e) => setNewTeam({...newTeam, purpose: e.target.value})}
+                            className="col-span-3"
+                            placeholder="What's this team's main objective?"
+                          />
+                        </div>
+                        
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="description" className="text-right">
+                            Description
+                          </Label>
+                          <Textarea
+                            id="description"
+                            value={newTeam.description}
+                            onChange={(e) => setNewTeam({...newTeam, description: e.target.value})}
+                            className="col-span-3"
+                            rows={3}
+                          />
+                        </div>
+                        
+                        <Button type="submit" className="mt-4 ml-auto">
+                          <Plus className="mr-2 h-4 w-4" />
+                          Create Team
+                        </Button>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+                  
                   <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
                     <DialogTrigger asChild>
                       <Button>
@@ -308,6 +544,37 @@ export default function TeamsPage() {
 
               {/* Team Overview Card */}
               <Card className="@container/card mx-6 p-6">
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <h2 className="text-xl font-bold">{currentTeam.name}</h2>
+                    <div className="flex items-center gap-2 mt-1">
+                      {getCategoryBadge(currentTeam.category)}
+                      {currentTeam.purpose && (
+                        <p className="text-sm text-muted-foreground">{currentTeam.purpose}</p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <Settings className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem>Edit Team</DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-destructive"
+                        onClick={() => handleDeleteTeam(currentTeam.id)}
+                        disabled={teams.length <= 1}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete Team
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                
                 <div className="grid gap-8 md:grid-cols-2">
                   <div>
                     <div className="flex justify-between items-center mb-4">
@@ -414,6 +681,7 @@ export default function TeamsPage() {
                         <h3 className="text-sm font-medium mb-2">Description</h3>
                         <p className="text-muted-foreground">{currentTeam.description}</p>
                       </div>
+                      
                       <div>
                         <h3 className="text-sm font-medium mb-2">Team Owner</h3>
                         <div className="flex items-center gap-3 p-3 border rounded-lg">
@@ -432,6 +700,7 @@ export default function TeamsPage() {
                           </div>
                         </div>
                       </div>
+                      
                       <div>
                         <h3 className="text-sm font-medium mb-2">Team Stats</h3>
                         <div className="grid grid-cols-2 gap-4">
@@ -445,6 +714,18 @@ export default function TeamsPage() {
                             <p className="text-sm text-muted-foreground">Last Updated</p>
                             <p className="font-medium">
                               {new Date(currentTeam.updatedAt).toLocaleDateString()}
+                            </p>
+                          </Card>
+                          <Card className="p-4">
+                            <p className="text-sm text-muted-foreground">Members</p>
+                            <p className="font-medium">
+                              {currentTeam.members.length}
+                            </p>
+                          </Card>
+                          <Card className="p-4">
+                            <p className="text-sm text-muted-foreground">Pending Invites</p>
+                            <p className="font-medium">
+                              {currentTeam.invites.length}
                             </p>
                           </Card>
                         </div>

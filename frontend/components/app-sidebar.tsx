@@ -13,6 +13,7 @@ import {
   IconHelp,
   IconInnerShadowTop,
   IconListDetails,
+  IconMessage,
   IconReport,
   IconSearch,
   IconSettings,
@@ -33,6 +34,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
+
 const data = {
   user: {
     name: "shadcn",
@@ -46,8 +48,13 @@ const data = {
       icon: IconDashboard,
     },
     {
-      title: "Lifecycle",
-      url: "/lifecycle",
+      title: "Projects",
+      url: "/projects",
+      icon: IconFolder,
+    },
+    {
+      title: "Tasks",
+      url: "/tasks",
       icon: IconListDetails,
     },
     {
@@ -55,14 +62,10 @@ const data = {
       url: "/analytics",
       icon: IconChartBar,
     },
-    {
-      title: "Projects",
-      url: "/projects",
-      icon: IconFolder,
-    },
+    
     {
       title: "Team",
-      url: "/team",
+      url: "/teams",
       icon: IconUsers,
     },
   ],
@@ -134,19 +137,15 @@ const data = {
   documents: [
     {
       name: "Data Library",
-      url: "#",
+      url: "/documents",
       icon: IconDatabase,
     },
     {
-      name: "Reports",
-      url: "#",
-      icon: IconReport,
+      name: "Forum",
+      url: "/forums",
+      icon: IconMessage,
     },
-    {
-      name: "Word Assistant",
-      url: "#",
-      icon: IconFileWord,
-    },
+
   ],
 }
 

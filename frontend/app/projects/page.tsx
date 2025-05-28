@@ -34,6 +34,22 @@ import {
   IconLoader,
   IconPlus,
   IconTrendingUp,
+  IconLayoutKanban,
+  IconCalendar,
+  IconTable,
+  IconList,
+  IconTemplate,
+  IconUser,
+  IconSearch,
+  IconAlertCircle,
+  IconCheck,
+  IconClock,
+  IconInfoCircle,
+  IconSettings,
+  IconTag,
+  IconUsers,
+  IconCalendarDue,
+  IconChartPie,
 } from "@tabler/icons-react"
 import {
   ColumnDef,
@@ -56,20 +72,24 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog"
 import { toast } from "sonner"
 import { z } from "zod"
+import { format } from "date-fns"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
@@ -95,65 +115,158 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs"
-
-
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { Progress } from "@/components/ui/progress"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Textarea } from "@/components/ui/textarea"
+import { Separator } from "@/components/ui/separator"
+import { Switch } from "@/components/ui/switch"
+import { cn } from "@/lib/utils"
 
+// Enhanced project schema with more detailed fields
 const projectSchema = z.object({
-  id: z.number(),
-  header: z.string(),
-  type: z.string(),
-  status: z.string(),
-  target: z.string(),
-  limit: z.string(),
-  reviewer: z.string(),
+  id: z.string(),
+  name: z.string().min(3, "Name must be at least 3 characters"),
+  description: z.string().optional(),
+  type: z.enum(["development", "design", "marketing", "operations", "research"]),
+  status: z.enum(["planning", "active", "on-hold", "completed", "archived"]),
+  priority: z.enum(["low", "medium", "high", "critical"]),
+  startDate: z.string(),
+  dueDate: z.string(),
+  team: z.string(),
+  healthScore: z.number().min(0).max(100),
+  progress: z.number().min(0).max(100),
+  budget: z.number().min(0).optional(),
+  viewType: z.enum(["list", "board", "calendar", "table"]),
+  assignees: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    avatar: z.string().optional(),
+    role: z.enum(["lead", "member", "contributor"]),
+  })),
+  tags: z.array(z.string()).optional(),
+  isPublic: z.boolean().default(false),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
 })
 
-const projects = [
+// Sample data with enhanced fields
+const projectsData = [
   {
-    id: 1,
-    header: "Website Redesign",
-    type: "Design",
-    status: "in-progress",
-    target: "2023-12-15",
-    limit: "Design Team",
-    reviewer: "65%",
+    id: "proj-1",
+    name: "Website Redesign",
+    description: "Complete redesign of company website with new branding",
+    type: "design",
+    status: "active",
+    priority: "high",
+    startDate: "2023-11-01",
+    dueDate: "2023-12-15",
+    team: "Design Team",
+    healthScore: 75,
+    progress: 65,
+    budget: 15000,
+    viewType: "board",
+    assignees: [
+      { id: "user-1", name: "Alex Johnson", avatar: "/avatars/01.png", role: "lead" },
+      { id: "user-2", name: "Sam Lee", avatar: "/avatars/02.png", role: "member" }
+    ],
+    tags: ["design", "branding"],
+    isPublic: false,
+    createdAt: "2023-10-15",
+    updatedAt: "2023-11-10"
   },
   {
-    id: 2,
-    header: "Mobile App Development",
-    type: "Development",
-    status: "completed",
-    target: "2023-11-30",
-    limit: "Dev Team",
-    reviewer: "100%",
+    id: "proj-2",
+    name: "Mobile App Development",
+    description: "Build new mobile application for iOS and Android",
+    type: "development",
+    status: "active",
+    priority: "critical",
+    startDate: "2023-10-01",
+    dueDate: "2023-11-30",
+    team: "Dev Team",
+    healthScore: 90,
+    progress: 85,
+    budget: 50000,
+    viewType: "board",
+    assignees: [
+      { id: "user-3", name: "Taylor Swift", avatar: "/avatars/03.png", role: "lead" },
+      { id: "user-4", name: "Jamie Smith", avatar: "/avatars/04.png", role: "member" }
+    ],
+    tags: ["mobile", "react-native"],
+    isPublic: true,
+    createdAt: "2023-09-20",
+    updatedAt: "2023-11-15"
   },
   {
-    id: 3,
-    header: "Marketing Campaign",
-    type: "Marketing",
-    status: "planned",
-    target: "2024-01-20",
-    limit: "Marketing",
-    reviewer: "10%",
-  },
-  {
-    id: 4,
-    header: "API Integration",
-    type: "Development",
-    status: "in-progress",
-    target: "2023-12-05",
-    limit: "Backend",
-    reviewer: "45%",
+    id: "proj-3",
+    name: "Marketing Campaign Q1",
+    description: "Launch new marketing campaign for Q1 products",
+    type: "marketing",
+    status: "planning",
+    priority: "medium",
+    startDate: "2024-01-01",
+    dueDate: "2024-01-20",
+    team: "Marketing",
+    healthScore: 30,
+    progress: 10,
+    budget: 20000,
+    viewType: "list",
+    assignees: [
+      { id: "user-5", name: "Pat Brown", avatar: "/avatars/05.png", role: "lead" }
+    ],
+    tags: ["marketing", "campaign"],
+    isPublic: false,
+    createdAt: "2023-11-01",
+    updatedAt: "2023-11-05"
   },
 ]
 
-function DragHandle({ id }: { id: number }) {
-  const { attributes, listeners } = useSortable({
-    id,
-  })
+// Health score indicator component
+function HealthIndicator({ score }: { score: number }) {
+  let color = "bg-red-500"
+  if (score >= 75) color = "bg-green-500"
+  else if (score >= 50) color = "bg-yellow-500"
+
+  return (
+    <Tooltip>
+      <TooltipTrigger>
+        <div className="flex items-center gap-2">
+          <div className={`w-3 h-3 rounded-full ${color}`} />
+          <span className="text-sm">{score}</span>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>
+        {score >= 75 ? "On track" : score >= 50 ? "Needs attention" : "At risk"}
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
+// Assignees avatars component
+function Assignees({ assignees }: { assignees: { id: string; name: string; avatar?: string }[] }) {
+  return (
+    <div className="flex -space-x-2">
+      {assignees.map((assignee) => (
+        <Tooltip key={assignee.id}>
+          <TooltipTrigger>
+            <Avatar className="border-2 border-background size-7">
+              <AvatarImage src={assignee.avatar} />
+              <AvatarFallback>{assignee.name.charAt(0)}</AvatarFallback>
+            </Avatar>
+          </TooltipTrigger>
+          <TooltipContent>{assignee.name}</TooltipContent>
+        </Tooltip>
+      ))}
+    </div>
+  )
+}
+
+function DragHandle({ id }: { id: string }) {
+  const { attributes, listeners } = useSortable({ id })
 
   return (
     <Button
@@ -169,143 +282,35 @@ function DragHandle({ id }: { id: number }) {
   )
 }
 
-const columns: ColumnDef<z.infer<typeof projectSchema>>[] = [
-  {
-    id: "drag",
-    header: () => null,
-    cell: ({ row }) => <DragHandle id={row.original.id} />,
-  },
-  {
-    id: "select",
-    header: ({ table }) => (
-      <div className="flex items-center justify-center">
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all"
-        />
-      </div>
-    ),
-    cell: ({ row }) => (
-      <div className="flex items-center justify-center">
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Select row"
-        />
-      </div>
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
-    accessorKey: "header",
-    header: "Project",
-    cell: ({ row }) => (
-      <div className="font-medium">{row.original.header}</div>
-    ),
-    enableHiding: false,
-  },
-  {
-    accessorKey: "type",
-    header: "Type",
-    cell: ({ row }) => (
-      <Badge variant="outline" className="capitalize">
-        {row.original.type}
-      </Badge>
-    ),
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => (
-      <Badge 
-        variant={
-          row.original.status === "completed" ? "default" : 
-          row.original.status === "in-progress" ? "secondary" : "outline"
-        }
-        className="capitalize"
-      >
-        {row.original.status === "completed" ? (
-          <IconCircleCheckFilled className="mr-1 size-3" />
-        ) : (
-          <IconLoader className="mr-1 size-3" />
-        )}
-        {row.original.status}
-      </Badge>
-    ),
-  },
-  {
-    accessorKey: "target",
-    header: "Due Date",
-    cell: ({ row }) => row.original.target,
-  },
-  {
-    accessorKey: "limit",
-    header: "Team",
-    cell: ({ row }) => row.original.limit,
-  },
-  {
-    accessorKey: "reviewer",
-    header: "Progress",
-    cell: ({ row }) => (
-      <Badge variant="outline" className="w-16 justify-center">
-        {row.original.reviewer}
-      </Badge>
-    ),
-  },
-  {
-    id: "actions",
-    cell: () => (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="data-[state=open]:bg-muted text-muted-foreground flex size-8"
-            size="icon"
-          >
-            <IconDotsVertical />
-            <span className="sr-only">Open menu</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-40">
-          <DropdownMenuItem disabled>
-            View Details
-          </DropdownMenuItem>
-          <DropdownMenuItem disabled>
-            Edit
-          </DropdownMenuItem>
-          <DropdownMenuItem disabled>
-            Duplicate
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive" disabled>
-            Delete
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    ),
-  },
-]
+type Project = z.infer<typeof projectSchema>;
 
-function DraggableRow({ row }: { row: Row<z.infer<typeof projectSchema>> }) {
-  const { transform, transition, setNodeRef, isDragging } = useSortable({
-    id: row.original.id,
-  })
+interface ProjectsTableProps {
+  projects: Project[];
+  onViewDetails: (projectId: string) => void;
+  onEditProject: (project: Project) => void;
+  onDeleteProject: (projectId: string) => void;
+  onDuplicateProject: (project: Project) => void;
+  onSwitchView: (projectId: string, viewType: Project["viewType"]) => void;
+  onCreateTemplate: (project: Project) => void;
+  onQuickAssign: (projectId: string, userId: string) => void;
+  userRole: "owner" | "manager" | "member";
+  onAddProject: () => void;
+}
+
+function DraggableRow({ row }: { row: Row<Project> }) {
+  const { setNodeRef, transform, transition, isDragging } = useSortable({ id: row.original.id });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    background: isDragging ? "var(--muted)" : undefined,
+  };
 
   return (
     <TableRow
-      data-state={row.getIsSelected() && "selected"}
-      data-dragging={isDragging}
       ref={setNodeRef}
-      className="relative z-0 data-[dragging=true]:z-10 data-[dragging=true]:opacity-80"
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition: transition,
-      }}
+      style={style}
+      data-state={row.getIsSelected() && "selected"}
     >
       {row.getVisibleCells().map((cell) => (
         <TableCell key={cell.id}>
@@ -313,36 +318,33 @@ function DraggableRow({ row }: { row: Row<z.infer<typeof projectSchema>> }) {
         </TableCell>
       ))}
     </TableRow>
-  )
-}
-
-type Project = z.infer<typeof projectSchema>;
-
-interface ProjectsTableProps {
-  onViewDetails: (projectId: number) => void;
-  onEditProject: (project: Project) => void;
-  onDeleteProject: (projectId: number) => void;
-  onDuplicateProject: (project: Project) => void;
+  );
 }
 
 export function ProjectsTable({
+  projects,
   onViewDetails,
   onEditProject,
   onDeleteProject,
   onDuplicateProject,
+  onSwitchView,
+  onCreateTemplate,
+  onQuickAssign,
+  userRole,
+  onAddProject,
 }: ProjectsTableProps) {
   const [data, setData] = React.useState(() => projects)
   const [rowSelection, setRowSelection] = React.useState({})
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({})
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  )
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize: 10,
   })
+  const [searchQuery, setSearchQuery] = React.useState("")
+  const [activeTab, setActiveTab] = React.useState(userRole === "member" ? "myWork" : "all")
+  
   const sortableId = React.useId()
   const sensors = useSensors(
     useSensor(MouseSensor, {}),
@@ -351,12 +353,39 @@ export function ProjectsTable({
   )
 
   const dataIds = React.useMemo<UniqueIdentifier[]>(
-
     () => data?.map(({ id }) => id) || [],
     [data]
   )
 
-  // Define columns inside the component to access the props
+  // Filter data based on active tab
+  const filteredData = React.useMemo(() => {
+    let result = [...data]
+    
+    if (activeTab === "myWork") {
+      result = result.filter(project => 
+        project.assignees.some(a => a.id === "user-1") // Replace with current user ID
+      )
+    } else if (activeTab === "active") {
+      result = result.filter(project => project.status === "active")
+    } else if (activeTab === "completed") {
+      result = result.filter(project => project.status === "completed")
+    }
+    
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase()
+      result = result.filter(project =>
+        project.name.toLowerCase().includes(query) ||
+        project.description?.toLowerCase().includes(query) ||
+        project.type.toLowerCase().includes(query) ||
+        project.team.toLowerCase().includes(query) ||
+        project.tags?.some(tag => tag.toLowerCase().includes(query)) ||
+        project.assignees.some(a => a.name.toLowerCase().includes(query))
+      )
+    }
+    
+    return result
+  }, [data, activeTab, searchQuery])
+
   const columns: ColumnDef<Project>[] = [
     {
       id: "drag",
@@ -390,10 +419,21 @@ export function ProjectsTable({
       enableHiding: false,
     },
     {
-      accessorKey: "header",
+      accessorKey: "name",
       header: "Project",
       cell: ({ row }) => (
-        <div className="font-medium">{row.original.header}</div>
+        <div className="font-medium flex items-center gap-2">
+          {row.original.name}
+          {row.original.isPublic && (
+            <Badge variant="outline" className="text-xs">
+              Public
+            </Badge>
+          )}
+          {row.original.viewType === "list" && <IconList className="size-3 text-muted-foreground" />}
+          {row.original.viewType === "board" && <IconLayoutKanban className="size-3 text-muted-foreground" />}
+          {row.original.viewType === "calendar" && <IconCalendar className="size-3 text-muted-foreground" />}
+          {row.original.viewType === "table" && <IconTable className="size-3 text-muted-foreground" />}
+        </div>
       ),
       enableHiding: false,
     },
@@ -409,40 +449,84 @@ export function ProjectsTable({
     {
       accessorKey: "status",
       header: "Status",
+      cell: ({ row }) => {
+        const statusMap = {
+          planning: { label: "Planning", color: "bg-gray-500" },
+          active: { label: "Active", color: "bg-blue-500" },
+          "on-hold": { label: "On Hold", color: "bg-yellow-500" },
+          completed: { label: "Completed", color: "bg-green-500" },
+          archived: { label: "Archived", color: "bg-purple-500" },
+        }
+        const status = statusMap[row.original.status]
+        
+        return (
+          <div className="flex items-center gap-2">
+            <span className={`size-2 rounded-full ${status.color}`} />
+            <span className="text-sm">{status.label}</span>
+          </div>
+        )
+      },
+    },
+    {
+      accessorKey: "priority",
+      header: "Priority",
+      cell: ({ row }) => {
+        const priorityMap = {
+          low: { label: "Low", color: "bg-green-500" },
+          medium: { label: "Medium", color: "bg-yellow-500" },
+          high: { label: "High", color: "bg-orange-500" },
+          critical: { label: "Critical", color: "bg-red-500" },
+        }
+        const priority = priorityMap[row.original.priority]
+        
+        return (
+          <Badge variant="outline" className="gap-1">
+            <span className={`size-2 rounded-full ${priority.color}`} />
+            {priority.label}
+          </Badge>
+        )
+      },
+    },
+    {
+      accessorKey: "healthScore",
+      header: "Health",
+      cell: ({ row }) => <HealthIndicator score={row.original.healthScore} />,
+    },
+    {
+      accessorKey: "dueDate",
+      header: "Due Date",
       cell: ({ row }) => (
-        <Badge 
-          variant={
-            row.original.status === "completed" ? "default" : 
-            row.original.status === "in-progress" ? "secondary" : "outline"
-          }
-          className="capitalize"
-        >
-          {row.original.status === "completed" ? (
-            <IconCircleCheckFilled className="mr-1 size-3" />
-          ) : (
-            <IconLoader className="mr-1 size-3" />
+        <div className="flex items-center gap-2">
+          {format(new Date(row.original.dueDate), "MMM dd, yyyy")}
+          {new Date(row.original.dueDate) < new Date() && row.original.status !== "completed" && (
+            <Tooltip>
+              <TooltipTrigger>
+                <IconAlertCircle className="size-4 text-red-500" />
+              </TooltipTrigger>
+              <TooltipContent>Overdue</TooltipContent>
+            </Tooltip>
           )}
-          {row.original.status}
-        </Badge>
+        </div>
       ),
     },
     {
-      accessorKey: "target",
-      header: "Due Date",
-      cell: ({ row }) => row.original.target,
-    },
-    {
-      accessorKey: "limit",
+      accessorKey: "team",
       header: "Team",
-      cell: ({ row }) => row.original.limit,
+      cell: ({ row }) => row.original.team,
     },
     {
-      accessorKey: "reviewer",
+      accessorKey: "assignees",
+      header: "Assignees",
+      cell: ({ row }) => <Assignees assignees={row.original.assignees} />,
+    },
+    {
+      accessorKey: "progress",
       header: "Progress",
       cell: ({ row }) => (
-        <Badge variant="outline" className="w-16 justify-center">
-          {row.original.reviewer}
-        </Badge>
+        <div className="flex items-center gap-2 w-24">
+          <Progress value={row.original.progress} className="h-2" />
+          <span className="text-xs text-muted-foreground">{row.original.progress}%</span>
+        </div>
       ),
     },
     {
@@ -459,16 +543,58 @@ export function ProjectsTable({
               <span className="sr-only">Open menu</span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-40">
+          <DropdownMenuContent align="end" className="w-48">
             <DropdownMenuItem onClick={() => onViewDetails(row.original.id)}>
               View Details
             </DropdownMenuItem>
+            
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>Switch View</DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                <DropdownMenuItem onClick={() => onSwitchView(row.original.id, "list")}>
+                  <IconList className="mr-2 size-4" /> List
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onSwitchView(row.original.id, "board")}>
+                  <IconLayoutKanban className="mr-2 size-4" /> Board
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onSwitchView(row.original.id, "calendar")}>
+                  <IconCalendar className="mr-2 size-4" /> Calendar
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onSwitchView(row.original.id, "table")}>
+                  <IconTable className="mr-2 size-4" /> Table
+                </DropdownMenuItem>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+            
+            {userRole !== "member" && (
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>Quick Assign</DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  {row.original.assignees.map(assignee => (
+                    <DropdownMenuItem 
+                      key={assignee.id}
+                      onClick={() => onQuickAssign(row.original.id, assignee.id)}
+                    >
+                      {assignee.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+            )}
+            
             <DropdownMenuItem onClick={() => onEditProject(row.original)}>
               Edit
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onDuplicateProject(row.original)}>
               Duplicate
             </DropdownMenuItem>
+            
+            {userRole === "owner" && (
+              <DropdownMenuItem onClick={() => onCreateTemplate(row.original)}>
+                <IconTemplate className="mr-2 size-4" /> Save as Template
+              </DropdownMenuItem>
+            )}
+            
             <DropdownMenuSeparator />
             <DropdownMenuItem 
               variant="destructive"
@@ -483,7 +609,7 @@ export function ProjectsTable({
   ];
 
   const table = useReactTable({
-    data,
+    data: filteredData,
     columns,
     state: {
       sorting,
@@ -492,7 +618,7 @@ export function ProjectsTable({
       columnFilters,
       pagination,
     },
-    getRowId: (row) => row.id.toString(),
+    getRowId: (row) => row.id,
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
@@ -520,12 +646,50 @@ export function ProjectsTable({
 
   return (
     <div className="w-full space-y-4">
+      <div className="flex flex-col gap-4">
+        {/* Global search and filters */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="relative flex-1">
+            <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <Input
+              placeholder="Search projects (#project-A or @user)..."
+              className="h-10 pl-9 pr-4"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          
+          {/* {userRole === "owner" && (
+            <Button variant="outline" className="gap-2">
+              <IconTemplate className="size-4" />
+              Templates
+            </Button>
+          )} */}
+          
+          {/* <Button onClick={onAddProject}>
+            <IconPlus className="mr-2 size-4" />
+            New Project
+          </Button> */}
+        </div>
+        
+        {/* View tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="all">All Projects</TabsTrigger>
+            <TabsTrigger value="myWork">My Work</TabsTrigger>
+            {userRole !== "member" && (
+              <>
+                <TabsTrigger value="active">Active</TabsTrigger>
+                <TabsTrigger value="completed">Completed</TabsTrigger>
+              </>
+            )}
+          </TabsList>
+        </Tabs>
+      </div>
+      
+      {/* Table controls */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Input
-            placeholder="Filter projects..."
-            className="h-8 w-[150px] lg:w-[250px]"
-          />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="h-8">
@@ -558,11 +722,9 @@ export function ProjectsTable({
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        {/* <Button size="sm" className="h-8">
-          <IconPlus className="mr-2 size-3" />
-          New Project
-        </Button> */}
       </div>
+      
+      {/* Main table */}
       <div className="overflow-hidden rounded-lg border">
         <DndContext
           collisionDetection={closestCenter}
@@ -614,6 +776,8 @@ export function ProjectsTable({
           </Table>
         </DndContext>
       </div>
+      
+      {/* Pagination */}
       <div className="flex items-center justify-between">
         <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
           {table.getFilteredSelectedRowModel().rows.length} of{" "}
@@ -695,16 +859,301 @@ export function ProjectsTable({
   )
 }
 
-export default function Page() {
-  const router = useRouter()
-  const [isDialogOpen, setIsDialogOpen] = React.useState(false)
-  const [currentProject, setCurrentProject] = React.useState<z.infer<typeof projectSchema> | null>(null)
+function ProjectFormDialog({
+  project,
+  onOpenChange,
+  onSubmit,
+}: {
+  project?: Project | null;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (data: Partial<Project>) => void;
+}) {
+  const [activeTab, setActiveTab] = React.useState("details")
+  const [formData, setFormData] = React.useState<Partial<Project>>(
+    project || {
+      name: "",
+      description: "",
+      type: "development",
+      status: "planning",
+      priority: "medium",
+      startDate: format(new Date(), "yyyy-MM-dd"),
+      dueDate: format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), "yyyy-MM-dd"),
+      team: "",
+      healthScore: 50,
+      progress: 0,
+      viewType: "list",
+      assignees: [],
+      tags: [],
+      isPublic: false,
+    }
+  )
 
-  const handleViewDetails = (projectId: number) => {
+  const handleChange = (field: keyof Project, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    onSubmit(formData)
+    onOpenChange(false)
+  }
+
+  return (
+    <DialogContent className="max-w-3xl">
+      <DialogHeader>
+        <DialogTitle>
+          {project ? "Edit Project" : "Create New Project"}
+        </DialogTitle>
+      </DialogHeader>
+      
+      <div className="grid gap-4 py-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="details">
+              <IconInfoCircle className="mr-2 size-4" />
+              Details
+            </TabsTrigger>
+            <TabsTrigger value="settings">
+              <IconSettings className="mr-2 size-4" />
+              Settings
+            </TabsTrigger>
+            <TabsTrigger value="team">
+              <IconUsers className="mr-2 size-4" />
+              Team
+            </TabsTrigger>
+            <TabsTrigger value="advanced">
+              <IconTag className="mr-2 size-4" />
+              Advanced
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="details" className="pt-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Project Name</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => handleChange("name", e.target.value)}
+                  placeholder="Enter project name"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="type">Project Type</Label>
+                <Select
+                  value={formData.type}
+                  onValueChange={(value) => handleChange("type", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="development">Development</SelectItem>
+                    <SelectItem value="design">Design</SelectItem>
+                    <SelectItem value="marketing">Marketing</SelectItem>
+                    <SelectItem value="operations">Operations</SelectItem>
+                    <SelectItem value="research">Research</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => handleChange("description", e.target.value)}
+                  placeholder="Enter project description"
+                  rows={3}
+                />
+              </div>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="settings" className="pt-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(value) => handleChange("status", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="planning">Planning</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="on-hold">On Hold</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="archived">Archived</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="priority">Priority</Label>
+                <Select
+                  value={formData.priority}
+                  onValueChange={(value) => handleChange("priority", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="critical">Critical</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="startDate">Start Date</Label>
+                <Input
+                  id="startDate"
+                  type="date"
+                  value={formData.startDate}
+                  onChange={(e) => handleChange("startDate", e.target.value)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="dueDate">Due Date</Label>
+                <Input
+                  id="dueDate"
+                  type="date"
+                  value={formData.dueDate}
+                  onChange={(e) => handleChange("dueDate", e.target.value)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="viewType">Default View</Label>
+                <Select
+                  value={formData.viewType}
+                  onValueChange={(value) => handleChange("viewType", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select view" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="list">List</SelectItem>
+                    <SelectItem value="board">Board</SelectItem>
+                    <SelectItem value="calendar">Calendar</SelectItem>
+                    <SelectItem value="table">Table</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="healthScore">Initial Health Score</Label>
+                <Input
+                  id="healthScore"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={formData.healthScore}
+                  onChange={(e) => handleChange("healthScore", parseInt(e.target.value))}
+                />
+              </div>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="team" className="pt-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="team">Team</Label>
+                <Input
+                  id="team"
+                  value={formData.team}
+                  onChange={(e) => handleChange("team", e.target.value)}
+                  placeholder="Enter team name"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Assignees</Label>
+                <div className="flex items-center gap-2">
+                  <Avatar className="size-8">
+                    <AvatarImage src="/avatars/01.png" />
+                    <AvatarFallback>AJ</AvatarFallback>
+                  </Avatar>
+                  <Avatar className="size-8">
+                    <AvatarImage src="/avatars/02.png" />
+                    <AvatarFallback>SL</AvatarFallback>
+                  </Avatar>
+                  <Button variant="outline" size="sm" className="size-8">
+                    <IconPlus className="size-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="advanced" className="pt-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="tags">Tags</Label>
+                <Input
+                  id="tags"
+                  value={formData.tags?.join(", ")}
+                  onChange={(e) => handleChange("tags", e.target.value.split(", "))}
+                  placeholder="Enter tags, separated by commas"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="budget">Budget ($)</Label>
+                <Input
+                  id="budget"
+                  type="number"
+                  min="0"
+                  value={formData.budget}
+                  onChange={(e) => handleChange("budget", parseInt(e.target.value))}
+                  placeholder="Enter budget amount"
+                />
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="isPublic"
+                  checked={formData.isPublic}
+                  onCheckedChange={(checked) => handleChange("isPublic", checked)}
+                />
+                <Label htmlFor="isPublic">Make project public</Label>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+      
+      <DialogFooter>
+        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          Cancel
+        </Button>
+        <Button type="submit" onClick={handleSubmit}>
+          {project ? "Save Changes" : "Create Project"}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  )
+}
+
+export default function ProjectsPage() {
+  const router = useRouter()
+  const [projects, setProjects] = React.useState<Project[]>(projectsData)
+  const [isDialogOpen, setIsDialogOpen] = React.useState(false)
+  const [currentProject, setCurrentProject] = React.useState<Project | null>(null)
+  const [userRole, setUserRole] = React.useState<"owner" | "manager" | "member">("owner")
+
+  const handleViewDetails = (projectId: string) => {
     router.push(`/projects/${projectId}`)
   }
 
-  const handleEditProject = (project: z.infer<typeof projectSchema>) => {
+  const handleEditProject = (project: Project) => {
     setCurrentProject(project)
     setIsDialogOpen(true)
   }
@@ -714,13 +1163,60 @@ export default function Page() {
     setIsDialogOpen(true)
   }
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    // Add your save logic here
-    setIsDialogOpen(false)
+  const handleDeleteProject = (projectId: string) => {
+    setProjects(prev => prev.filter(p => p.id !== projectId))
+    toast.success("Project deleted successfully")
   }
-  return (
 
+  const handleDuplicateProject = (project: Project) => {
+    const newProject = {
+      ...project,
+      id: `proj-${Date.now()}`,
+      name: `${project.name} (Copy)`,
+      status: "planning",
+      progress: 0,
+      createdAt: new Date().toISOString(),
+    }
+    setProjects(prev => [...prev, newProject])
+    toast.success("Project duplicated successfully")
+  }
+
+  const handleSwitchView = (projectId: string, viewType: Project["viewType"]) => {
+    setProjects(prev => prev.map(p => 
+      p.id === projectId ? { ...p, viewType } : p
+    ))
+    toast.success(`View switched to ${viewType}`)
+  }
+
+  const handleCreateTemplate = (project: Project) => {
+    toast.success(`Template created from "${project.name}"`)
+  }
+
+  const handleQuickAssign = (projectId: string, userId: string) => {
+    toast.success(`User assigned to project`)
+  }
+
+  const handleSubmitProject = (data: Partial<Project>) => {
+    if (currentProject) {
+      // Update existing project
+      setProjects(prev => prev.map(p => 
+        p.id === currentProject.id ? { ...p, ...data, updatedAt: new Date().toISOString() } as Project : p
+      ))
+      toast.success("Project updated successfully")
+    } else {
+      // Create new project
+      const newProject: Project = {
+        ...data as Required<Project>,
+        id: `proj-${Date.now()}`,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }
+      setProjects(prev => [...prev, newProject])
+      toast.success("Project created successfully")
+    }
+  }
+
+  return (
     <SidebarProvider
       style={
         {
@@ -734,81 +1230,53 @@ export default function Page() {
         <SiteHeader />
         <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
           <div className="flex items-center justify-between">
-            <h1 className="text-lg font-semibold md:text-2xl">Projects</h1>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={handleAddProject}>
-<IconPlus className="mr-2 size-3" />
-          New Project                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>
-                    {currentProject ? "Edit Project" : "Add New Project"}
-                  </DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="name" className="text-right">
-                      Name
-                    </Label>
-                    <Input
-                      id="name"
-                      defaultValue={currentProject?.header || ""}
-                      className="col-span-3"
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="type" className="text-right">
-                      Type
-                    </Label>
-                    <Input
-                      id="type"
-                      defaultValue={currentProject?.type || ""}
-                      className="col-span-3"
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="team" className="text-right">
-                      Team
-                    </Label>
-                    <Input
-                      id="team"
-                      defaultValue={currentProject?.limit || ""}
-                      className="col-span-3"
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="dueDate" className="text-right">
-                      Due Date
-                    </Label>
-                    <Input
-                      id="dueDate"
-                      type="date"
-                      defaultValue={currentProject?.target || ""}
-                      className="col-span-3"
-                    />
-                  </div>
-                  <Button type="submit" className="mt-4">
-                    Save Changes
+            <div>
+              <h1 className="text-lg font-semibold md:text-2xl">Projects Dashboard</h1>
+              <p className="text-sm text-muted-foreground">
+                Manage all your projects in one place
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Select value={userRole} onValueChange={(v: "owner" | "manager" | "member") => setUserRole(v)}>
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="Role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="owner">Owner</SelectItem>
+                  <SelectItem value="manager">Manager</SelectItem>
+                  <SelectItem value="member">Member</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={handleAddProject}>
+                    <IconPlus className="mr-2 size-3" />
+                    New Project
                   </Button>
-                </form>
-              </DialogContent>
-            </Dialog>
+                </DialogTrigger>
+                {isDialogOpen && (
+                  <ProjectFormDialog
+                    project={currentProject}
+                    onOpenChange={setIsDialogOpen}
+                    onSubmit={handleSubmitProject}
+                  />
+                )}
+              </Dialog>
+            </div>
           </div>
           
           <ProjectsTable 
+            projects={projects}
             onViewDetails={handleViewDetails}
             onEditProject={handleEditProject}
-            onDeleteProject={(projectId: number) => {
-              // Add your delete logic here
-              // For example, show a toast and remove from state if needed
-              toast.success("Project deleted");
-            }}
-            onDuplicateProject={(project) => {
-              // Add your duplicate logic here
-              toast.success("Project duplicated");
-            }}
+            onDeleteProject={handleDeleteProject}
+            onDuplicateProject={handleDuplicateProject}
+            onSwitchView={handleSwitchView}
+            onCreateTemplate={handleCreateTemplate}
+            onQuickAssign={handleQuickAssign}
+            userRole={userRole}
+            onAddProject={handleAddProject}
           />
         </div>
       </SidebarInset>
