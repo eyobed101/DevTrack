@@ -17,41 +17,68 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Loader2 } from "lucide-react"
 
-export default function LoginPage() {
+export default function SignupPage() {
   const router = useRouter()
   const [user, setUser] = useState({
     email: "",
     password: "",
+    username: "",
   })
+
   const [loading, setLoading] = useState(false)
 
-  const onLogin = async () => {
+  const onSignup = async () => {
     try {
       setLoading(true)
-      await axios.post("/api/users/login", user)
-      toast.success("Login successful")
-      router.push("/profile")
+      await axios.post("/api/users/signup", user)
+      toast.success("Signup successful")
+      toast("Please check your inbox and click on verification link.", { 
+        duration: 10000,
+        icon: '✉️',
+        style: {
+          background: '#f0f9ff',
+          border: '1px solid #bae6fd',
+          color: '#0c4a6e',
+        }
+      })
+      router.push("/login")
     } catch (error: any) {
-      toast.error("Email or Password is incorrect")
+      toast.error(error.response?.data?.error || "Signup failed")
     } finally {
       setLoading(false)
     }
   }
+
+  const isFormValid = user.username.length > 0 && 
+                      user.email.length > 0 && 
+                      user.password.length > 0
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md border-0 shadow-lg rounded-xl overflow-hidden">
         <div className="bg-primary p-6 text-center">
           <CardTitle className="text-2xl font-bold text-primary-foreground">
-            Welcome Back
+            Create Account
           </CardTitle>
           <CardDescription className="text-primary-foreground/80 mt-1">
-            Sign in to continue your journey
+            Join our community today
           </CardDescription>
         </div>
         
         <CardContent className="p-6 space-y-6">
           <div className="space-y-4">
+            <div>
+              <Label htmlFor="username" className="text-foreground">Username</Label>
+              <Input
+                id="username"
+                type="text"
+                placeholder="Your unique name"
+                value={user.username}
+                onChange={(e) => setUser({...user, username: e.target.value})}
+                className="mt-1 focus-visible:ring-2 focus-visible:ring-primary"
+              />
+            </div>
+            
             <div>
               <Label htmlFor="email" className="text-foreground">Email</Label>
               <Input
@@ -65,18 +92,11 @@ export default function LoginPage() {
             </div>
             
             <div>
-              <div className="flex justify-between items-center">
-                <Label htmlFor="password" className="text-foreground">Password</Label>
-                <Link 
-                  href='/forgotpassword'
-                  className="text-sm text-primary hover:text-primary/80 transition-colors"
-                >
-                  Forgot Password?
-                </Link>
-              </div>
+              <Label htmlFor="password" className="text-foreground">Password</Label>
               <Input
                 id="password"
                 type="password"
+                placeholder="At least 8 characters"
                 value={user.password}
                 onChange={(e) => setUser({...user, password: e.target.value})}
                 className="mt-1 focus-visible:ring-2 focus-visible:ring-primary"
@@ -85,26 +105,26 @@ export default function LoginPage() {
           </div>
           
           <Button
-            disabled={!user.email || !user.password || loading}
-            onClick={onLogin}
+            disabled={!isFormValid || loading}
+            onClick={onSignup}
             className="w-full h-11 transition-all hover:scale-[1.02]"
           >
             {loading ? (
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
-              "Sign In"
+              "Create Account"
             )}
           </Button>
         </CardContent>
         
         <CardFooter className="p-6 pt-0">
           <div className="w-full text-center text-sm text-muted-foreground">
-            Don't have an account?{" "}
+            Already have an account?{" "}
             <Link 
-              href='/signup'
+              href='/login'
               className="font-medium text-primary hover:text-primary/80 transition-colors"
             >
-              Create account
+              Sign in
             </Link>
           </div>
         </CardFooter>
