@@ -4,7 +4,7 @@ import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
-import { Moon, Sun } from "lucide-react"
+import { Moon, Sun, User, Settings, LogOut } from "lucide-react"
 import { useTheme } from "next-themes"
 import {
   CommandDialog,
@@ -14,17 +14,32 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
-
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { signOut } from "next-auth/react"
 
 export function SiteHeader() {
   const { setTheme } = useTheme()
   const [open, setOpen] = React.useState(false)
+  const [loading, setLoading] = React.useState(false)
+  
+  const handleSignOut = async () => {
+    setLoading(true)
+    try {
+      await signOut({ redirect: false , callbackUrl: "/login" })
+      window.location.href = "/login"
+      
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // Sample static data to search from
   const staticPages = [
@@ -56,7 +71,6 @@ export function SiteHeader() {
       name: "Help",
       href: "/help",
     },
-    
   ]
 
   React.useEffect(() => {
@@ -111,16 +125,41 @@ export function SiteHeader() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button variant="ghost" asChild size="sm" className="hidden sm:flex">
-            <a
-              href="https://github.com/shadcn-ui/ui/tree/main/apps/v4/app/(examples)/dashboard"
-              rel="noopener noreferrer"
-              target="_blank"
-              className="dark:text-foreground"
-            >
-              GitHub
-            </a>
-          </Button>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src="/avatars/01.png" alt="User" />
+                  <AvatarFallback>U</AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="end" forceMount>
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">John Doe</p>
+                  <p className="text-xs leading-none text-muted-foreground">
+                    john@example.com
+                  </p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>
+                <User className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleSignOut} disabled={loading}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Sign out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 

@@ -6,7 +6,9 @@ import { CreateUserDto, UpdateUserDto } from '../user.dto';
 import { AppDataSource } from '../../../config/database';
 import { User } from '../entities/user.entity';
 import { logger } from '../../../config/logger';
+import { Controller } from '@nestjs/common';
 
+@Controller('user')
 export class UserController {
   private userService: UserService;
 

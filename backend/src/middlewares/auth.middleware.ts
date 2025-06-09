@@ -1,41 +1,51 @@
 import { Request, Response, NextFunction } from 'express';
-import { JwtService } from '@nestjs/jwt';
+import jwt from 'jsonwebtoken';
+import { logger } from '../config/logger';
 import { User } from '../modules/users/entities/user.entity';
-import { AppDataSource } from '../config/database';
+import { UserService } from '../modules/users/user.service';
 
-const jwtService = new JwtService({ secret: process.env.ACCESS_TOKEN_SECRET });
-const userRepository = AppDataSource.getRepository(User);
+export const auth = () => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void>=> {
+    try {
+      // 1. Get token from header
+      const token = req.headers.authorization?.split(' ')[1];
+      
+      if (!token) {
+         res.status(401).json({ message: 'Authentication required' });
+         return
+      }
 
-export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
-  const accessToken =
-    req.cookies.accessToken ||
-    req.headers.authorization?.split(' ')[1];
+      // 2. Verify token
+      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { sub: string };
+      
+      // 3. Get user from database
+      const user = await UserService.findById(decoded.sub);
+      
+      if (!user) {
+         res.status(401).json({ message: 'Invalid token - user not found' });
+         return
+      }
 
-  if (!accessToken) {
-    return next();
-  }
+      // 4. Attach user to request
+      req.user = { id: Number(user.id), email: user.email, roles: user.roles.map(role => role.name) } as any;
+      
+      // 5. Continue to next middleware
+      next();
+    } catch (error) {
+      logger.error('Authentication error:', error);
+      
+      if (error instanceof jwt.TokenExpiredError) {
+         res.status(401).json({ message: 'Token expired' });
+         return
+      }
+      
+      if (error instanceof jwt.JsonWebTokenError) {
+         res.status(401).json({ message: 'Invalid token' });
+         return
+      }
 
-  try {
-    const payload = jwtService.verify(accessToken, {
-      secret: process.env.ACCESS_TOKEN_SECRET,
-    });
-
-    const user = await userRepository.findOne({
-      where: { id: payload.sub },
-      relations: ['roles'],
-    });
-
-    if (user && user.isActive) {
-      req.user = { id: Number(user.id), name: user.username };
+       res.status(500).json({ message: 'Authentication failed' });
+       return
     }
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error('Token verification failed:', error.message);
-    } else {
-      console.error('Token verification failed:', error);
-    }
-    req.user = undefined;
-  }
-
-  next();
-}
+  };
+};

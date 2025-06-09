@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "ts-node src/index.ts",
+    "dev": "nodemon",
     "build": "tsc",
     "start": "node dist/index.js"
+    
   },
   "author": "eyobedel",
   "license": "ISC",
@@ -24,17 +25,24 @@
     "@types/node": "^22.15.3",
     "@types/nodemailer": "^6.4.17",
     "@types/papaparse": "^5.3.15",
+    "@types/passport": "^1.0.17",
+    "@types/passport-jwt": "^4.0.1",
+    "@types/passport-local": "^1.0.38",
     "@types/pdfmake": "^0.2.11",
     "nodemon": "^3.1.10",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   },
   "dependencies": {
+    "@nestjs-modules/mailer": "^2.0.2",
     "@nestjs/common": "^11.1.2",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.1.2",
     "@nestjs/jwt": "^11.0.0",
+    "@nestjs/passport": "^11.0.5",
+    "@nestjs/platform-express": "^11.1.2",
     "@nestjs/swagger": "^11.2.0",
+    "@nestjs/typeorm": "^11.0.0",
     "bcrypt": "^5.1.1",
     "body-parser": "^2.2.0",
     "class-transformer": "^0.5.1",
@@ -55,10 +63,12 @@
     "papaparse": "^5.5.2",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
+    "passport-jwt": "^4.0.1",
+    "passport-local": "^1.0.0",
     "pdfmake": "^0.2.19",
     "pg": "^8.15.6",
     "reflect-metadata": "^0.2.2",
-    "typeorm": "^0.3.22",
+    "typeorm": "^0.3.24",
     "winston": "^3.17.0"
   }
 }

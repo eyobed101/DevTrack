@@ -1,30 +1,29 @@
-import { NextResponse } from 'next/server'
-import { NextRequest } from 'next/server'
- 
-// This function can be marked `async` if using `await` inside
-export function middleware(request: NextRequest) {
-  const path = request.nextUrl.pathname
-  const isPublicPath = path === '/login' || path === '/signup' || path === '/verifyemail' || path === '/forgotpassword'
-  const token = request.cookies.get('token')?.value || ''
-  
-  if(isPublicPath && token) {
-    return NextResponse.redirect( new URL('/', request.nextUrl))
+
+// middleware.ts
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { withAuth } from 'next-auth/middleware';
+
+export default withAuth(
+  function middleware(request: NextRequest) {
+    // Your additional middleware logic here if needed
+    return NextResponse.next();
+  },
+  {
+    callbacks: {
+      authorized: ({ token }) => !!token, // True if user is authenticated
+    },
+    pages: {
+      signIn: '/login', // Custom sign-in page
+      error: '/error', // Error page for auth errors
+    }
   }
-  if(!isPublicPath && !token) {
-    return NextResponse.redirect( new URL('/login', request.nextUrl))
- }
-}
- 
-// See "Matching Paths" below to learn more
+);
+
 export const config = {
   matcher: [
     '/',
     '/profile/:path*',
-    '/login',
-    '/signup',
-    '/verifyemail',
-    '/forgotpassword',
-    '/resetpassword',
     '/dashboard/:path*',
     '/settings/:path*',
     '/projects/:path*',
@@ -34,7 +33,5 @@ export const config = {
     '/teams/:path*',
     '/analytics/:path*',
     '/reports/:path*',
-
-
   ]
-}
+};

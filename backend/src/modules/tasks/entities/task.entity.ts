@@ -20,6 +20,12 @@ import { Label } from './label.entity';
 import { TaskStatus, TaskPriority } from '../task.enum';
 import { TimeTracking } from '../../analytics/entities/time-tracking.entity';
 
+export enum TeamMemberRole {
+  OWNER = 'OWNER',
+  TEAM_LEADER = 'TEAM_LEADER',
+  MEMBER = 'MEMBER'
+}
+
 @Entity()
 export class Task {
   @PrimaryGeneratedColumn('uuid')
@@ -35,18 +41,26 @@ export class Task {
   @JoinColumn({ name: 'project_id' })
   project: Project;
 
-  @ManyToOne(() => User, (user) => user.assignedTasks)
-  @JoinColumn({ name: 'assignee_id' })
-  assignee: User | null;
+  // Multiple assignees
+  @ManyToMany(() => User, (user) => user.assignedTasks)
+  @JoinTable({
+    name: 'task_assignees',
+    joinColumn: { name: 'task_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'user_id', referencedColumnName: 'id' }
+  })
+  assignees: User[];
 
-  @ManyToOne(() => User, (user) => user.reportedTasks)
-  @JoinColumn({ name: 'reporter_id' })
-  reporter: User;
+
+
+  // Team leader (optional)
+  @ManyToOne(() => User, (user) => user.teamLeaderTasks, { nullable: true })
+  @JoinColumn({ name: 'team_leader_id' })
+  teamLeader: User | null;
 
   @Column({
     type: 'enum',
     enum: TaskStatus,
-    default: TaskStatus.TODO
+    default: TaskStatus.NOT_STARTED
   })
   status: TaskStatus;
 
@@ -74,6 +88,8 @@ export class Task {
 
   @OneToMany(() => Comment, (comment) => comment.task)
   comments: Comment[];
+  
+  
 
   @ManyToMany(() => Label)
   @JoinTable({

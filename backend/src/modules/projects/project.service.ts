@@ -4,7 +4,9 @@ import { User } from '../users/entities/user.entity';
 import { ProjectMember } from './entities/project-member.entity';
 import { CreateProjectDto, UpdateProjectDto } from './project.dto';
 import { ProjectRole } from './project.enum';
-import { ProjectStatus } from './project.enum';
+// import { ProjectStatus } from './project.enum';
+import { ProjectStatus } from './entities/project.entity';
+
 
 export class ProjectService {
   constructor(
@@ -79,4 +81,26 @@ export class ProjectService {
     });
     return result.affected !== 0;
   }
+
+  async updateStatus(projectId: string, status: string): Promise<Project | null> {
+    const project = await this.projectRepository.findOne({ where: { id: projectId } });
+    if (!project) {
+      return null;
+    }
+    project.status = status as ProjectStatus;
+    await this.projectRepository.save(project);
+    return project;
+  }
+
+  async updateProgress(projectId: string, progress: number): Promise<Project | null> {
+    const project = await this.projectRepository.findOne({ where: { id: projectId } });
+    if (!project) {
+      return null;
+    }
+    project.progress = progress;
+    await this.projectRepository.save(project);
+    return project;
+  }
+
+  
 }

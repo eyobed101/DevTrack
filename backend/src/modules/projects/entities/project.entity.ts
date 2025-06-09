@@ -116,6 +116,8 @@ export class Project {
   @UpdateDateColumn()
   updatedAt: Date;
 
+  
+
   // New relationships
   @OneToMany(() => ProjectUpdate, update => update.project)
   updates: ProjectUpdate[];

@@ -39,6 +39,7 @@ interface TaskModalProps {
     description: string
     assignees: string[]
     teamLeader?: string
+    timeline: string
   }) => void
 }
 

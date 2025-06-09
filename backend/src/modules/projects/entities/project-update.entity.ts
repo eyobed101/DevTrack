@@ -11,6 +11,9 @@ export class ProjectUpdate {
   @Column('text')
   content: string;
 
+  @Column()
+  updateText: string;
+
   @ManyToOne(() => User, user => user.projectUpdates)
   author: User;
 
@@ -19,4 +22,5 @@ export class ProjectUpdate {
 
   @CreateDateColumn()
   createdAt: Date;
+
 }

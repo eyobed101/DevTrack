@@ -154,7 +154,7 @@ const projectSchema = z.object({
 })
 
 // Sample data with enhanced fields
-const projectsData = [
+const projectsData: Project[] = [
   {
     id: "proj-1",
     name: "Website Redesign",
@@ -658,18 +658,7 @@ export function ProjectsTable({
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          
-          {/* {userRole === "owner" && (
-            <Button variant="outline" className="gap-2">
-              <IconTemplate className="size-4" />
-              Templates
-            </Button>
-          )} */}
-          
-          {/* <Button onClick={onAddProject}>
-            <IconPlus className="mr-2 size-4" />
-            New Project
-          </Button> */}
+
         </div>
         
         {/* View tabs */}
@@ -1169,13 +1158,27 @@ export default function ProjectsPage() {
   }
 
   const handleDuplicateProject = (project: Project) => {
-    const newProject = {
+    const newProject: Project = {
       ...project,
       id: `proj-${Date.now()}`,
       name: `${project.name} (Copy)`,
-      status: "planning",
+      status: "planning" as Project["status"],
       progress: 0,
       createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      // Ensure all required fields are present
+      type: project.type,
+      priority: project.priority,
+      startDate: project.startDate,
+      dueDate: project.dueDate,
+      team: project.team,
+      healthScore: project.healthScore,
+      budget: project.budget,
+      viewType: project.viewType,
+      assignees: project.assignees,
+      tags: project.tags,
+      isPublic: project.isPublic,
+      description: project.description,
     }
     setProjects(prev => [...prev, newProject])
     toast.success("Project duplicated successfully")

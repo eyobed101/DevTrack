@@ -35,7 +35,7 @@ export class NotificationController {
         return;
       }
       const notifications = await this.notificationService.getUserNotifications(
-        req.user.id.toString(),
+        req.user.id,
         parseInt(page as string),
         parseInt(limit as string),
         read ? read === 'true' : undefined
@@ -98,7 +98,7 @@ export class NotificationController {
           }
       const result = await this.notificationService.markAsRead(
         req.params.id,
-        req.user.id.toString()
+        req.user.id
       );
       if (!result) {
         res.status(404).json({
@@ -129,7 +129,7 @@ export class NotificationController {
             });
             return;
           }
-      const count = await this.notificationService.markAllAsRead(req.user.id.toString());
+      const count = await this.notificationService.markAllAsRead(req.user.id);
       res.status(200).json({
         success: true,
         message: `${count} notifications marked as read`

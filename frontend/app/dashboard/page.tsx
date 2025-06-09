@@ -3,6 +3,8 @@ import { ChartAreaInteractive } from "@/components/chart-area-interactive"
 import { DataTable } from "@/components/data-table"
 import { SectionCards } from "@/components/section-cards"
 import { SiteHeader } from "@/components/site-header"
+
+
 import {
   SidebarInset,
   SidebarProvider,
@@ -12,6 +14,7 @@ import data from "./data.json"
 import Overview from "@/components/overview"
 
 export default function Page() {
+  
   return (
     <SidebarProvider
       style={
@@ -32,7 +35,6 @@ export default function Page() {
                 <ChartAreaInteractive />
               </div>
               <Overview />
-              {/* <DataTable data={data} /> */}
             </div>
           </div>
         </div>

@@ -90,15 +90,7 @@ export default function ForgotPasswordPage() {
             </Link>
           </div>
           
-          {/* <div className="w-full text-center text-xs text-muted-foreground mt-3">
-            Need help?{" "}
-            <Link 
-              href='/support'
-              className="font-medium text-primary hover:text-primary/80 transition-colors"
-            >
-              Contact support
-            </Link>
-          </div> */}
+
         </CardFooter>
       </Card>
     </div>

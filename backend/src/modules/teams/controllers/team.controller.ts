@@ -82,7 +82,7 @@ export class TeamController {
         });
          return;
       }
-      const team = await this.teamService.create(req.body, req.user.id.toString());
+      const team = await this.teamService.create(req.body, req.user.id);
        res.status(201).json({
         success: true,
         data: team,

@@ -1,3 +1,4 @@
+// src/app.ts
 import 'reflect-metadata';
 import express, { Application, Request, Response, NextFunction } from 'express';
 import http from 'http';
@@ -5,13 +6,17 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import { json, urlencoded } from 'body-parser';
-import cookieParser from 'cookie-parser'; // Add cookie parser
 import { DataSource } from 'typeorm';
 import { AppDataSource } from './config/database';
 import { logger } from './config/logger';
 import { rateLimiter } from './middlewares/rate-limiter';
 import { errorHandler } from './middlewares/error-handler';
-import authRouter from '../src/modules/auth/routes';
+import { createConnection } from 'mysql2/promise';
+import { initializeBackgroundJobs } from './jobs';
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+
+// Routers
 import userRouter from '../src/modules/users/routes';
 import projectRouter from '../src/modules/projects/routes';
 import taskRouter from '../src/modules/tasks/routes';
@@ -19,30 +24,18 @@ import teamRouter from '../src/modules/teams/routes';
 import notificationRouter from '../src/modules/notifications/routes';
 import analyticsRouter from '../src/modules/analytics/routes';
 import reportRouter from '../src/modules/reports/routes';
-import { createConnection } from 'mysql2/promise';
-import { initializeBackgroundJobs } from './jobs';
-
-// Import auth components
-import { authMiddleware } from './middlewares/auth.middleware';
-import  rbacMiddleware  from './middlewares/rbac.middleware';
-import  permissionsMiddleware  from './middlewares/permissions.middleware';
-import { Public } from './common/decorators/public.decorator';
+import { ExpressAdapter } from '@nestjs/platform-express';
 
 class AppServer {
   private app: Application;
   private server: http.Server;
   private port: number;
+  private nestApp: any;
 
   constructor(port: number) {
     this.app = express();
     this.port = port;
     this.server = http.createServer(this.app);
-
-    this.initializeDatabase();
-    this.initializeMiddlewares();
-    this.initializeRoutes();
-    this.initializeErrorHandling();
-    this.initializeBackgroundJobs();
   }
 
   private async initializeDatabase(): Promise<void> {
@@ -71,20 +64,32 @@ class AppServer {
     }
   }
 
+  private async initializeNestJS(): Promise<void> {
+  this.nestApp = await NestFactory.create(AppModule, new ExpressAdapter(this.app));
+    
+  this.nestApp.enableCors({
+    origin: 'http://localhost:3000', // Allow all origins
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS', // Allow common HTTP methods
+    credentials: true // Allow credentials (cookies, authorization headers, etc.)
+  });
+  this.nestApp.setGlobalPrefix('api/v1');
+    
+    // Apply NestJS middleware that needs to run before Express middleware
+    await this.nestApp.init();
+  }
+
   private initializeMiddlewares(): void {
     // Security
     this.app.use(helmet());
     this.app.use(cors({
-      origin: process.env.CORS_ORIGIN?.split(',') || '*',
+      origin:  'http://localhost:3000',
       credentials: true
     }));
-
-    // Cookie parser
-    this.app.use(cookieParser());
+    this.app.use(cors());
 
     // Request logging
-    this.app.use(morgan(process.env.NODE_ENV === 'development' ? 'dev' : 'combined', {
-      stream: { write: (message) => logger.info(message.trim()) }
+    this.app.use(morgan(process.env.NODE_ENV === 'development' ? 'dev' : 'combined', { 
+      stream: { write: (message) => logger.info(message.trim()) } 
     }));
 
     // Rate limiting
@@ -94,52 +99,24 @@ class AppServer {
     this.app.use(json({ limit: '10mb' }));
     this.app.use(urlencoded({ extended: true }));
 
-    // Static files
+    // Static files (if needed)
     this.app.use('/uploads', express.static('uploads'));
-
-    // Authentication middleware
-    this.app.use(authMiddleware);
-    // RBAC and permissions middleware
-    
   }
 
   private initializeRoutes(): void {
-    // Health check endpoint (public)
+    // Health check endpoint
     this.app.get('/health', (req: Request, res: Response) => {
       res.json({ status: 'healthy', timestamp: new Date() });
     });
 
-    // API routes with RBAC and permissions middleware
-    this.app.use('/api/v1/auth', authRouter);
-    this.app.use('/api/v1/users', 
-      // rbacMiddleware(['ADMIN']), 
-      userRouter
-    );
-    this.app.use('/api/v1/projects', 
-      // rbacMiddleware(['ADMIN', 'PROJECT_MANAGER', 'TEAM_LEAD']),
-      projectRouter
-    );
-    this.app.use('/api/v1/tasks', 
-      // rbacMiddleware(['ADMIN', 'PROJECT_MANAGER', 'TEAM_LEAD', 'MEMBER']),
-      // permissionsMiddleware(['TASK_READ', 'TASK_WRITE']),
-      taskRouter
-    );
-    this.app.use('/api/v1/teams', 
-      // rbacMiddleware(['ADMIN', 'TEAM_LEAD']),
-      teamRouter
-    );
-    this.app.use('/api/v1/notifications', 
-      // rbacMiddleware(['ADMIN', 'PROJECT_MANAGER', 'TEAM_LEAD', 'MEMBER']),
-      notificationRouter
-    );
-    this.app.use('/api/v1/analytics', 
-      // rbacMiddleware(['ADMIN', 'PROJECT_MANAGER']),
-      analyticsRouter
-    );
-    this.app.use('/api/v1/reports', 
-      // rbacMiddleware(['ADMIN']),
-      reportRouter
-    );
+    // Mount Express routers
+    this.app.use('/api/v1/users', userRouter);
+    this.app.use('/api/v1/projects', projectRouter);
+    this.app.use('/api/v1/tasks', taskRouter);
+    this.app.use('/api/v1/teams', teamRouter);
+    this.app.use('/api/v1/notifications', notificationRouter);
+    this.app.use('/api/v1/analytics', analyticsRouter);
+    this.app.use('/api/v1/reports', reportRouter);
 
     // 404 Handler
     this.app.use((req: Request, res: Response) => {
@@ -158,7 +135,14 @@ class AppServer {
     }
   }
 
-  public start(): void {
+  public async start(): Promise<void> {
+    await this.initializeDatabase();
+    await this.initializeNestJS();
+    this.initializeMiddlewares();
+    this.initializeRoutes();
+    this.initializeErrorHandling();
+    this.initializeBackgroundJobs();
+
     this.server.listen(this.port, () => {
       logger.info(`Server running on port ${this.port} in ${process.env.NODE_ENV} mode`);
     });
@@ -170,6 +154,10 @@ class AppServer {
 
   public getDataSource(): DataSource {
     return AppDataSource;
+  }
+
+  public getNestApp(): any {
+    return this.nestApp;
   }
 }
 

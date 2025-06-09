@@ -14,6 +14,11 @@ export class CreateUserDto {
   @IsString()
   @MinLength(8)
   password: string;
+
+  isVerified?: boolean;
+  isActive?: boolean;
+
+
 }
 
 export class UpdateUserDto {
@@ -33,4 +38,16 @@ export class UpdateUserDto {
   @IsString()
   @MinLength(8)
   password?: string;
+
+  @IsOptional()
+  @IsString()
+  isVerified?: boolean;
+
+  @IsOptional()
+  verificationToken?: string | null;
+  
+
+
+  resetPasswordToken?: string | null;
+  resetPasswordExpires?: Date | null;
 }

@@ -39,7 +39,15 @@ export class User {
   @Column({ unique: true })
   email: string;
 
-  @Column()
+  @Column({
+  length: 100,
+  charset: 'utf8mb4',
+  collation: 'utf8mb4_bin',
+  transformer: {
+    to: (value: string) => value,
+    from: (value: string) => value
+  }
+  })
   password: string;
 
   @Column({ nullable: true })
@@ -59,6 +67,13 @@ export class User {
 
   @Column({ default: true })
   isActive: boolean;
+
+  @Column({ default: false })
+  isEmailVerified: boolean;
+
+  @Column({ type: 'varchar', nullable: true })
+  verificationToken: string | null;
+
 
   @Column({ type: 'varchar', nullable: true })
   resetPasswordToken: string | null;
@@ -81,10 +96,16 @@ export class User {
   @OneToMany(() => TeamMember, teamMember => teamMember.user)
   teamMemberships: TeamMember[];
 
-  @ManyToMany(() => Task, task => task.assignees)
+  @ManyToMany(() => Task, (task) => task.assignees)
   assignedTasks: Task[];
 
-  @ManyToMany(() => Role, role => role.users)
+  // Corrected team leader relationship
+  @OneToMany(() => Task, (task) => task.teamLeader)
+  teamLeaderTasks: Task[];
+
+
+
+  @ManyToMany(() => Role, (role: Role) => role.users)
   @JoinTable()
   roles: Role[];
 
@@ -92,8 +113,7 @@ export class User {
   @JoinColumn()
   preferences: UserPreferences;
 
-  @OneToMany(() => Task, (task) => task.teamLeader)
-  teamLeaderTasks: Task[];
+
 
   @OneToMany(() => Subtask, (subtask) => subtask.assignee)
   assignedSubtasks: Subtask[];

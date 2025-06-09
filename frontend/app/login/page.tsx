@@ -1,9 +1,8 @@
-'use client'
-import Link from "next/link"
-import React, { useState } from "react"
-import { useRouter } from "next/navigation"
-import axios from "axios"
-import toast from "react-hot-toast"
+"use client";
+import Link from "next/link";
+import React, { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import toast from "react-hot-toast";
 import {
   Card,
   CardContent,
@@ -11,32 +10,55 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Loader2 } from "lucide-react"
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
+import { signIn } from "next-auth/react";
+
+
 
 export default function LoginPage() {
-  const router = useRouter()
+  const router = useRouter();
   const [user, setUser] = useState({
     email: "",
     password: "",
-  })
-  const [loading, setLoading] = useState(false)
+  });
+  const searchParams = useSearchParams();
+
+  const [loading, setLoading] = useState(false);
 
   const onLogin = async () => {
-    try {
-      setLoading(true)
-      await axios.post("/api/users/login", user)
-      toast.success("Login successful")
-      router.push("/profile")
-    } catch (error: any) {
-      toast.error("Email or Password is incorrect")
-    } finally {
-      setLoading(false)
+  try {
+    setLoading(true);
+
+    const callbackUrl = searchParams?.get('callbackUrl') || '/';
+
+
+    const res = await signIn("credentials", {
+      redirect: false, // Prevent automatic redirects
+      email: user.email,
+      password: user.password,
+      callbackUrl // Update to your dashboard URL
+
+    });
+
+    if (res?.error) {
+      toast.error("Email or Password is incorrect");
+    } else {
+      toast.success("Login successful");
+      window.location.href = "/dashboard";
+
     }
+  } catch (error: any) {
+    toast.error(error.message || "Email or Password is incorrect");
+  } finally {
+    setLoading(false);
   }
+};
+
+  
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -49,26 +71,30 @@ export default function LoginPage() {
             Sign in to continue your journey
           </CardDescription>
         </div>
-        
+
         <CardContent className="p-6 space-y-6">
           <div className="space-y-4">
             <div>
-              <Label htmlFor="email" className="text-foreground">Email</Label>
+              <Label htmlFor="email" className="text-foreground">
+                Email
+              </Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="you@example.com"
                 value={user.email}
-                onChange={(e) => setUser({...user, email: e.target.value})}
+                onChange={(e) => setUser({ ...user, email: e.target.value })}
                 className="mt-1 focus-visible:ring-2 focus-visible:ring-primary"
               />
             </div>
-            
+
             <div>
               <div className="flex justify-between items-center">
-                <Label htmlFor="password" className="text-foreground">Password</Label>
-                <Link 
-                  href='/forgotpassword'
+                <Label htmlFor="password" className="text-foreground">
+                  Password
+                </Label>
+                <Link
+                  href="/forgotpassword"
                   className="text-sm text-primary hover:text-primary/80 transition-colors"
                 >
                   Forgot Password?
@@ -78,12 +104,12 @@ export default function LoginPage() {
                 id="password"
                 type="password"
                 value={user.password}
-                onChange={(e) => setUser({...user, password: e.target.value})}
+                onChange={(e) => setUser({ ...user, password: e.target.value })}
                 className="mt-1 focus-visible:ring-2 focus-visible:ring-primary"
               />
             </div>
           </div>
-          
+
           <Button
             disabled={!user.email || !user.password || loading}
             onClick={onLogin}
@@ -96,12 +122,12 @@ export default function LoginPage() {
             )}
           </Button>
         </CardContent>
-        
+
         <CardFooter className="p-6 pt-0">
           <div className="w-full text-center text-sm text-muted-foreground">
-            Don't have an account?{" "}
-            <Link 
-              href='/signup'
+            Don&apos;t have an account?{" "}
+            <Link
+              href="/signup"
               className="font-medium text-primary hover:text-primary/80 transition-colors"
             >
               Create account
@@ -110,5 +136,5 @@ export default function LoginPage() {
         </CardFooter>
       </Card>
     </div>
-  )
+  );
 }

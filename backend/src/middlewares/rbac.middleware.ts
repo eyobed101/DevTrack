@@ -7,7 +7,7 @@ const rbacMiddleware = (allowedRoles: string[]) =>
     }
 
     // Type assertion to inform TypeScript about the expected structure of req.user
-    const user = req.user as { id: number; name: string; roles: { name: string }[] };
+    const user = req.user as unknown as { id: number; name: string; roles: { name: string }[] };
 
     const userRoles = user.roles.map(role => role.name);
     const hasPermission = allowedRoles.some(role => userRoles.includes(role));

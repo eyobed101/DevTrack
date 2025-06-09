@@ -2,11 +2,28 @@
 import { Request, Response } from 'express';
 import { validate } from '../../../middlewares/validator';
 import { ProjectService } from '../project.service';
+
+// Extend Express Request interface to include user with id
+declare global {
+  namespace Express {
+    interface User {
+      id: string;
+      [key: string]: any;
+    }
+    interface Request {
+      user?: User;
+    }
+  }
+}
 import { AppDataSource } from '../../../config/database';
 import { Project } from '../entities/project.entity';
 import { User } from '../../users/entities/user.entity';
 import { logger } from '../../../config/logger';
-import { CreateProjectDto, UpdateProjectDto, AddMemberDto } from '../project.dto';
+import { 
+  CreateProjectDto, 
+  UpdateProjectDto, 
+  AddMemberDto,
+} from '../project.dto';
 
 export class ProjectController {
   private projectService: ProjectService;
@@ -23,22 +40,28 @@ export class ProjectController {
     this.deleteProject = this.deleteProject.bind(this);
     this.addMember = this.addMember.bind(this);
     this.removeMember = this.removeMember.bind(this);
-
+    this.setProjectStatus = this.setProjectStatus.bind(this);
+    this.updateProjectProgress = this.updateProjectProgress.bind(this);
   }
 
   async getAllProjects(req: Request, res: Response): Promise<void> {
     try {
-      const { page = 1, limit = 10 } = req.query;
-      const projects = await this.projectService.findAll(
-        parseInt(page as string),
-        parseInt(limit as string)
-      );
+      const { page = 1, limit = 10, status, healthScore } = req.query;
+      
+      const options = {
+        page: parseInt(page as string),
+        limit: parseInt(limit as string),
+        status: status as string,
+        healthScore: healthScore ? parseInt(healthScore as string) : undefined
+      };
+
+      const projects = await this.projectService.findAll(options.page, options.limit);
       res.status(200).json({
         success: true,
         data: projects,
         pagination: {
-          page: parseInt(page as string),
-          limit: parseInt(limit as string),
+          page: options.page,
+          limit: options.limit,
           total: projects.length
         }
       });
@@ -77,14 +100,27 @@ export class ProjectController {
   // @validate(CreateProjectDto)
   async createProject(req: Request, res: Response): Promise<void> {
     try {
-      if (!req.user || typeof req.user.id !== 'number') {
+      if (!req.user || typeof req.user.id !== 'string') {
         res.status(400).json({
           success: false,
           message: 'Invalid user information'
         });
         return;
       }
-      const project = await this.projectService.create(req.body, req.user.id.toString());
+      
+      const projectData = {
+        ...req.body,
+        // Convert dates to Date objects
+        startDate: req.body.startDate ? new Date(req.body.startDate) : null,
+        endDate: req.body.endDate ? new Date(req.body.endDate) : null,
+        // Convert tags to array if needed
+        tags: Array.isArray(req.body.tags) ? req.body.tags : [req.body.tags].filter(Boolean),
+        // Set default values
+        healthScore: req.body.healthScore || 50,
+        progress: req.body.progress || 0
+      };
+
+      const project = await this.projectService.create(projectData, req.user.id);
       res.status(201).json({
         success: true,
         data: project,
@@ -102,7 +138,16 @@ export class ProjectController {
   // @validate(UpdateProjectDto)
   async updateProject(req: Request, res: Response): Promise<void> {
     try {
-      const project = await this.projectService.update(req.params.id, req.body);
+      const updateData = {
+        ...req.body,
+        startDate: req.body.startDate ? new Date(req.body.startDate) : undefined,
+        endDate: req.body.endDate ? new Date(req.body.endDate) : undefined,
+        tags: req.body.tags ? 
+          (Array.isArray(req.body.tags) ? req.body.tags : [req.body.tags].filter(Boolean)) 
+          : undefined
+      };
+
+      const project = await this.projectService.update(req.params.id, updateData);
       if (!project) {
         res.status(404).json({
           success: false,
@@ -191,6 +236,58 @@ export class ProjectController {
       res.status(400).json({
         success: false,
         message: error instanceof Error ? error.message : 'Failed to remove member'
+      });
+    }
+  }
+
+  // @validate(SetProjectStatusDto)
+  async setProjectStatus(req: Request, res: Response): Promise<void> {
+    try {
+      const { status } = req.body;
+      const project = await this.projectService.updateStatus(req.params.id, status);
+      if (!project) {
+        res.status(404).json({
+          success: false,
+          message: 'Project not found'
+        });
+        return;
+      }
+      res.status(200).json({
+        success: true,
+        data: project,
+        message: 'Project status updated successfully'
+      });
+    } catch (error) {
+      logger.error(`Error updating project status ${req.params.id}:`, error);
+      res.status(400).json({
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to update project status'
+      });
+    }
+  }
+
+  // @validate(UpdateProjectProgressDto)
+  async updateProjectProgress(req: Request, res: Response): Promise<void> {
+    try {
+      const { progress } = req.body;
+      const project = await this.projectService.updateProgress(req.params.id, progress);
+      if (!project) {
+        res.status(404).json({
+          success: false,
+          message: 'Project not found'
+        });
+        return;
+      }
+      res.status(200).json({
+        success: true,
+        data: project,
+        message: 'Project progress updated successfully'
+      });
+    } catch (error) {
+      logger.error(`Error updating project progress ${req.params.id}:`, error);
+      res.status(400).json({
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to update project progress'
       });
     }
   }

@@ -15,6 +15,10 @@ import { Task } from '../modules/tasks/entities/task.entity';
 import { Subtask } from '../modules/tasks/entities/subtask.entity';
 import { Comment } from '../modules/tasks/entities/comment.entity';
 import TimeTracking from '../modules/analytics/entities/time-tracking.entity';
+import { ProjectUpdate } from '../modules/projects/entities/project-update.entity';
+import { ProjectFile } from '../modules/projects/entities/project-file.entity';
+import { RefreshToken } from '../modules/auth/entities/refresh-token.entity';
+import { ConfigService } from '@nestjs/config';
 
 dotenv.config();
 
@@ -23,7 +27,7 @@ dotenv.config();
 export const AppDataSource = new DataSource({
   type: 'mysql',
   host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432'),
+  port: parseInt(process.env.DB_PORT || '3306'),
   username: process.env.DB_USER || 'eyobed',
   password: process.env.DB_PASSWORD || 'pass',
   database: process.env.DB_NAME || 'collaboration_platform',
@@ -31,7 +35,15 @@ export const AppDataSource = new DataSource({
   logging: process.env.NODE_ENV === 'development',
   entities: [
     User,
+
+    // Add all your entities here
+    ProjectFile,
+    Role,
+    RefreshToken,
+    ProjectMember,
+    ProjectUpdate,
     Project,
+
     Team,
     TeamMember,
     TeamInvite,
@@ -40,7 +52,6 @@ export const AppDataSource = new DataSource({
     Task,
     Subtask,
     Comment,
-    Role,
     UserPreferences,
     ProjectMember,
     TimeTracking
