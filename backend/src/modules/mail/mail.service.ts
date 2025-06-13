@@ -12,7 +12,7 @@ import { Task } from '../tasks/entities/task.entity';
 @Injectable()
 export class MailService {
   private transporter: nodemailer.Transporter;
-  private templatesDir = path.join(__dirname, '..', 'templates');
+  private templatesDir = path.join(__dirname, 'templates');
 
   constructor(private configService: ConfigService) {
     this.initializeTransporter();
@@ -33,6 +33,8 @@ export class MailService {
       },
     });
 
+
+
     this.transporter.verify((error) => {
       if (error) {
         logger.error('Mail transporter verification failed:', error);
@@ -44,12 +46,12 @@ export class MailService {
 
   private registerPartials() {
     const partialsDir = path.join(this.templatesDir, 'partials');
-    
+
     if (fs.existsSync(partialsDir)) {
       fs.readdirSync(partialsDir).forEach(filename => {
         const matches = /^([^.]+).hbs$/.exec(filename);
         if (!matches) return;
-        
+
         const name = matches[1];
         const template = fs.readFileSync(path.join(partialsDir, filename), 'utf8');
         handlebars.registerPartial(name, template);
@@ -59,11 +61,11 @@ export class MailService {
 
   private async renderTemplate(templateName: string, context: any): Promise<string> {
     const templatePath = path.join(this.templatesDir, `${templateName}.hbs`);
-    
+
     if (!fs.existsSync(templatePath)) {
       throw new Error(`Template not found: ${templateName}`);
     }
-    
+
     const source = fs.readFileSync(templatePath, 'utf8');
     const template = handlebars.compile(source);
     return template(context);
@@ -71,11 +73,12 @@ export class MailService {
 
   private async sendMail(options: nodemailer.SendMailOptions): Promise<void> {
     try {
+
       const info = await this.transporter.sendMail({
         from: `"${this.configService.get('EMAIL_FROM_NAME')}" <${this.configService.get('EMAIL_FROM_ADDRESS')}>`,
         ...options,
       });
-      
+
       logger.log({ level: 'info', message: `Email sent: ${info.messageId}` });
     } catch (error) {
       logger.error('Error sending email:', error);

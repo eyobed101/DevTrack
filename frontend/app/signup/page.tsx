@@ -2,8 +2,7 @@
 import Link from "next/link"
 import React, { useState } from "react"
 import { useRouter } from "next/navigation"
-import axios from "axios"
-import toast from "react-hot-toast"
+import { toast } from "sonner"
 import {
   Card,
   CardContent,
@@ -16,6 +15,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Loader2 } from "lucide-react"
+import { signIn } from "next-auth/react"
+
+const BASEURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
 
 export default function SignupPage() {
   const router = useRouter()
@@ -24,34 +26,84 @@ export default function SignupPage() {
     password: "",
     username: "",
   })
+  const [errors, setErrors] = useState({
+    password: "",
+  })
 
   const [loading, setLoading] = useState(false)
 
+  const validatePassword = (password: string) => {
+    if (password.length < 8) {
+      return "Password must be at least 8 characters"
+    }
+    if (password.length > 32) {
+      return "Password must be no more than 32 characters"
+    }
+    if (!/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/.test(password)) {
+      return "Password must contain at least one uppercase letter, one lowercase letter, and one number or special character"
+    }
+    return ""
+  }
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newPassword = e.target.value
+    setUser({ ...user, password: newPassword })
+    setErrors({ ...errors, password: validatePassword(newPassword) })
+  }
+
   const onSignup = async () => {
+    const passwordError = validatePassword(user.password)
+    if (passwordError) {
+      setErrors({ ...errors, password: passwordError })
+      return
+    }
+
     try {
       setLoading(true)
-      await axios.post("/api/users/signup", user)
-      toast.success("Signup successful")
-      toast("Please check your inbox and click on verification link.", { 
-        duration: 10000,
-        icon: '✉️',
-        style: {
-          background: '#f0f9ff',
-          border: '1px solid #bae6fd',
-          color: '#0c4a6e',
-        }
+      
+      // First register the user
+      const registerResponse = await fetch(`${BASEURL}/auth/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(user),
       })
-      router.push("/login")
+
+      const registerData = await registerResponse.json()
+
+      if (registerResponse.ok) {
+        toast.success("Account created successfully!")
+        
+        // Automatically sign in the user after registration
+        const signInResponse = await signIn('credentials', {
+          redirect: false,
+          email: user.email,
+          password: user.password,
+          callbackUrl: '/dashboard'
+        })
+
+        if (signInResponse?.error) {
+          toast.error("Account created! Please sign in.")
+          router.push('/login')
+        } else {
+          toast.success("Welcome! You're now signed in.")
+          router.push('/dashboard')
+        }
+      } else {
+        throw new Error(registerData.error || "Registration failed")
+      }
     } catch (error: any) {
-      toast.error(error.response?.data?.error || "Signup failed")
+      toast.error(error.message || "Signup failed")
     } finally {
       setLoading(false)
     }
   }
 
   const isFormValid = user.username.length > 0 && 
-                      user.email.length > 0 && 
-                      user.password.length > 0
+                     user.email.length > 0 && 
+                     user.password.length >= 8 &&
+                     !errors.password
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -64,11 +116,13 @@ export default function SignupPage() {
             Join our community today
           </CardDescription>
         </div>
-        
+
         <CardContent className="p-6 space-y-6">
           <div className="space-y-4">
             <div>
-              <Label htmlFor="username" className="text-foreground">Username</Label>
+              <Label htmlFor="username" className="text-foreground">
+                Username
+              </Label>
               <Input
                 id="username"
                 type="text"
@@ -78,9 +132,11 @@ export default function SignupPage() {
                 className="mt-1 focus-visible:ring-2 focus-visible:ring-primary"
               />
             </div>
-            
+
             <div>
-              <Label htmlFor="email" className="text-foreground">Email</Label>
+              <Label htmlFor="email" className="text-foreground">
+                Email
+              </Label>
               <Input
                 id="email"
                 type="email"
@@ -90,20 +146,42 @@ export default function SignupPage() {
                 className="mt-1 focus-visible:ring-2 focus-visible:ring-primary"
               />
             </div>
-            
+
             <div>
-              <Label htmlFor="password" className="text-foreground">Password</Label>
+              <Label htmlFor="password" className="text-foreground">
+                Password
+              </Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="At least 8 characters"
+                placeholder="At least 8 characters with uppercase, lowercase, and number/special char"
                 value={user.password}
-                onChange={(e) => setUser({...user, password: e.target.value})}
+                onChange={handlePasswordChange}
                 className="mt-1 focus-visible:ring-2 focus-visible:ring-primary"
               />
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-500">{errors.password}</p>
+              )}
+              <div className="mt-2 text-xs text-muted-foreground">
+                <p>Password requirements:</p>
+                <ul className="list-disc pl-4 space-y-1">
+                  <li className={user.password.length >= 8 ? "text-green-500" : ""}>
+                    8-32 characters
+                  </li>
+                  <li className={/[A-Z]/.test(user.password) ? "text-green-500" : ""}>
+                    At least one uppercase letter
+                  </li>
+                  <li className={/[a-z]/.test(user.password) ? "text-green-500" : ""}>
+                    At least one lowercase letter
+                  </li>
+                  <li className={/((?=.*\d)|(?=.*\W+))/.test(user.password) ? "text-green-500" : ""}>
+                    At least one number or special character
+                  </li>
+                </ul>
+              </div>
             </div>
           </div>
-          
+
           <Button
             disabled={!isFormValid || loading}
             onClick={onSignup}
@@ -116,12 +194,12 @@ export default function SignupPage() {
             )}
           </Button>
         </CardContent>
-        
+
         <CardFooter className="p-6 pt-0">
           <div className="w-full text-center text-sm text-muted-foreground">
             Already have an account?{" "}
-            <Link 
-              href='/login'
+            <Link
+              href="/login"
               className="font-medium text-primary hover:text-primary/80 transition-colors"
             >
               Sign in

@@ -12,7 +12,7 @@ export class ProjectService {
   constructor(
     private projectRepository: Repository<Project>,
     private userRepository: Repository<User>
-  ) {}
+  ) { }
 
   async findAll(page: number, limit: number): Promise<Project[]> {
     return this.projectRepository.find({
@@ -21,6 +21,29 @@ export class ProjectService {
       take: limit,
       order: { createdAt: 'DESC' }
     });
+  }
+
+  async findUserProjects(userId: string, page: number, limit: number): Promise<Project[]> {
+    return this.projectRepository
+      .createQueryBuilder('project')
+      .leftJoinAndSelect('project.owner', 'owner')
+      .leftJoinAndSelect('project.members', 'members')
+      .leftJoinAndSelect('members.user', 'memberUser')
+      .leftJoinAndSelect('project.tasks', 'tasks')
+      .where('owner.id = :userId', { userId })
+      .orWhere((qb) => {
+        const subQuery = qb
+          .subQuery()
+          .select('member.projectId')
+          .from(ProjectMember, 'member')
+          .where('member.userId = :userId', { userId })
+          .getQuery();
+        return 'project.id IN ' + subQuery;
+      })
+      .orderBy('project.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getMany();
   }
 
   async findById(id: string): Promise<Project | null> {
@@ -39,7 +62,7 @@ export class ProjectService {
     const project = this.projectRepository.create({
       ...createProjectDto,
       owner: { id: ownerId },
-      
+
     });
 
     const savedProject = await this.projectRepository.save(project);
@@ -102,5 +125,5 @@ export class ProjectService {
     return project;
   }
 
-  
+
 }

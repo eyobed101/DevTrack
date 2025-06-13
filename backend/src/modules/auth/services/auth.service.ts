@@ -35,8 +35,6 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    console.log('Stored hash:', user.password);
-    console.log('Input password:', await this.passwordService.hashPassword(password));
 
     const isValid = await this.passwordService.validatePassword(
       password,
@@ -44,7 +42,6 @@ export class AuthService {
     );
 
 
-    console.log(`Validating user: ${email}, isActive: ${user.isActive}, isValid: ${isValid}`);
 
     if (!isValid) {
       throw new UnauthorizedException('Invalid credentials');

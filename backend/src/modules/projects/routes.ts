@@ -6,6 +6,8 @@ const router = Router();
 const controller = new ProjectController();
 
 router.get('/', authenticate, controller.getAllProjects);
+router.get('/myprojects', authenticate, controller.getUserProjects);
+
 router.get('/:id', authenticate, controller.getProjectById);
 router.post('/', authenticate, controller.createProject);
 router.put('/:id', authenticate, controller.updateProject);

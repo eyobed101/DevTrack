@@ -2,7 +2,7 @@
 import Link from "next/link";
 import React, { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import {
   Card,
   CardContent,
@@ -43,6 +43,8 @@ export default function LoginPage() {
       callbackUrl // Update to your dashboard URL
 
     });
+
+    console.log("Login response:", res);
 
     if (res?.error) {
       toast.error("Email or Password is incorrect");

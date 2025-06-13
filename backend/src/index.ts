@@ -65,15 +65,15 @@ class AppServer {
   }
 
   private async initializeNestJS(): Promise<void> {
-  this.nestApp = await NestFactory.create(AppModule, new ExpressAdapter(this.app));
-    
-  this.nestApp.enableCors({
-    origin: 'http://localhost:3000', // Allow all origins
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS', // Allow common HTTP methods
-    credentials: true // Allow credentials (cookies, authorization headers, etc.)
-  });
-  this.nestApp.setGlobalPrefix('api/v1');
-    
+    this.nestApp = await NestFactory.create(AppModule, new ExpressAdapter(this.app));
+
+    this.nestApp.enableCors({
+      origin: 'http://localhost:3000', // Allow all origins
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS', // Allow common HTTP methods
+      credentials: true // Allow credentials (cookies, authorization headers, etc.)
+    });
+    this.nestApp.setGlobalPrefix('api/v1');
+
     // Apply NestJS middleware that needs to run before Express middleware
     await this.nestApp.init();
   }
@@ -82,14 +82,14 @@ class AppServer {
     // Security
     this.app.use(helmet());
     this.app.use(cors({
-      origin:  'http://localhost:3000',
+      origin: 'http://localhost:3000',
       credentials: true
     }));
     this.app.use(cors());
 
     // Request logging
-    this.app.use(morgan(process.env.NODE_ENV === 'development' ? 'dev' : 'combined', { 
-      stream: { write: (message) => logger.info(message.trim()) } 
+    this.app.use(morgan(process.env.NODE_ENV === 'development' ? 'dev' : 'combined', {
+      stream: { write: (message) => logger.info(message.trim()) }
     }));
 
     // Rate limiting
@@ -110,13 +110,13 @@ class AppServer {
     });
 
     // Mount Express routers
-    this.app.use('/api/v1/users', userRouter);
-    this.app.use('/api/v1/projects', projectRouter);
-    this.app.use('/api/v1/tasks', taskRouter);
-    this.app.use('/api/v1/teams', teamRouter);
-    this.app.use('/api/v1/notifications', notificationRouter);
-    this.app.use('/api/v1/analytics', analyticsRouter);
-    this.app.use('/api/v1/reports', reportRouter);
+    this.app.use('/api/v1x/users', userRouter);
+    this.app.use('/api/v1x/projects', projectRouter);
+    this.app.use('/api/v1x/tasks', taskRouter);
+    this.app.use('/api/v1x/teams', teamRouter);
+    this.app.use('/api/v1x/notifications', notificationRouter);
+    this.app.use('/api/v1x/analytics', analyticsRouter);
+    this.app.use('/api/v1x/reports', reportRouter);
 
     // 404 Handler
     this.app.use((req: Request, res: Response) => {

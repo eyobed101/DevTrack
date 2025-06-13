@@ -19,9 +19,9 @@ import { AppDataSource } from '../../../config/database';
 import { Project } from '../entities/project.entity';
 import { User } from '../../users/entities/user.entity';
 import { logger } from '../../../config/logger';
-import { 
-  CreateProjectDto, 
-  UpdateProjectDto, 
+import {
+  CreateProjectDto,
+  UpdateProjectDto,
   AddMemberDto,
 } from '../project.dto';
 
@@ -47,7 +47,7 @@ export class ProjectController {
   async getAllProjects(req: Request, res: Response): Promise<void> {
     try {
       const { page = 1, limit = 10, status, healthScore } = req.query;
-      
+
       const options = {
         page: parseInt(page as string),
         limit: parseInt(limit as string),
@@ -70,6 +70,46 @@ export class ProjectController {
       res.status(500).json({
         success: false,
         message: 'Failed to fetch projects'
+      });
+    }
+  }
+
+  async getUserProjects(req: Request, res: Response): Promise<void> {
+    try {
+      if (!req.user?.id) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required'
+        });
+        return;
+      }
+
+      const { page = 1, limit = 10 } = req.query;
+      const options = {
+        page: parseInt(page as string),
+        limit: parseInt(limit as string)
+      };
+
+      const projects = await this.projectService.findUserProjects(
+        req.user.id,
+        options.page,
+        options.limit
+      );
+
+      res.status(200).json({
+        success: true,
+        data: projects,
+        pagination: {
+          page: options.page,
+          limit: options.limit,
+          total: projects.length
+        }
+      });
+    } catch (error) {
+      logger.error(`Error fetching projects for user ${req.user?.id}:`, error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch user projects'
       });
     }
   }
@@ -107,7 +147,7 @@ export class ProjectController {
         });
         return;
       }
-      
+
       const projectData = {
         ...req.body,
         // Convert dates to Date objects
@@ -142,8 +182,8 @@ export class ProjectController {
         ...req.body,
         startDate: req.body.startDate ? new Date(req.body.startDate) : undefined,
         endDate: req.body.endDate ? new Date(req.body.endDate) : undefined,
-        tags: req.body.tags ? 
-          (Array.isArray(req.body.tags) ? req.body.tags : [req.body.tags].filter(Boolean)) 
+        tags: req.body.tags ?
+          (Array.isArray(req.body.tags) ? req.body.tags : [req.body.tags].filter(Boolean))
           : undefined
       };
 
