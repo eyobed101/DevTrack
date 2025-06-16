@@ -18,7 +18,6 @@ import { AppModule } from './app.module';
 
 // Routers
 import userRouter from '../src/modules/users/routes';
-import projectRouter from '../src/modules/projects/routes';
 import taskRouter from '../src/modules/tasks/routes';
 import teamRouter from '../src/modules/teams/routes';
 import notificationRouter from '../src/modules/notifications/routes';
@@ -110,8 +109,8 @@ class AppServer {
     });
 
     // Mount Express routers
-    this.app.use('/api/v1x/users', userRouter);
-    this.app.use('/api/v1x/projects', projectRouter);
+    // this.app.use('/api/v1x/users', userRouter);
+    // this.app.use('/api/v1x/projects', projectRouter);
     this.app.use('/api/v1x/tasks', taskRouter);
     this.app.use('/api/v1x/teams', teamRouter);
     this.app.use('/api/v1x/notifications', notificationRouter);

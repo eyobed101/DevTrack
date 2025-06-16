@@ -26,9 +26,9 @@ import { TeamsModule } from './modules/teams/teams.module';
     }),
     UsersModule,
     AuthModule,
-    // ProjectsModule, // Assuming you have a ProjectsModule
-    // TasksModule, // Assuming you have a TasksModule
-    // TeamsModule, // Assuming you have a TeamsModule
+    ProjectsModule, // Add this line
+
+
 
   ],
 })

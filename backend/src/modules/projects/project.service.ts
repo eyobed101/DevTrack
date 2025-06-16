@@ -1,29 +1,39 @@
+// src/modules/projects/project.service.ts
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Project } from './entities/project.entity';
 import { User } from '../users/entities/user.entity';
 import { ProjectMember } from './entities/project-member.entity';
 import { CreateProjectDto, UpdateProjectDto } from './project.dto';
 import { ProjectRole } from './project.enum';
-// import { ProjectStatus } from './project.enum';
 import { ProjectStatus } from './entities/project.entity';
 
-
+@Injectable()
 export class ProjectService {
   constructor(
-    private projectRepository: Repository<Project>,
-    private userRepository: Repository<User>
-  ) { }
+    @InjectRepository(Project)
+    private readonly projectRepository: Repository<Project>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+    @InjectRepository(ProjectMember)
+    private readonly projectMemberRepository: Repository<ProjectMember>,
+  ) {}
 
   async findAll(page: number, limit: number): Promise<Project[]> {
     return this.projectRepository.find({
       relations: ['owner', 'members', 'members.user'],
       skip: (page - 1) * limit,
       take: limit,
-      order: { createdAt: 'DESC' }
+      order: { createdAt: 'DESC' },
     });
   }
 
-  async findUserProjects(userId: string, page: number, limit: number): Promise<Project[]> {
+  async findUserProjects(
+    userId: string,
+    page: number,
+    limit: number,
+  ): Promise<Project[]> {
     return this.projectRepository
       .createQueryBuilder('project')
       .leftJoinAndSelect('project.owner', 'owner')
@@ -49,27 +59,38 @@ export class ProjectService {
   async findById(id: string): Promise<Project | null> {
     return this.projectRepository.findOne({
       where: { id },
-      relations: ['owner', 'members', 'members.user', 'tasks']
+      relations: ['owner', 'members', 'members.user', 'tasks'],
     });
   }
 
-  async create(createProjectDto: CreateProjectDto, ownerId: string): Promise<Project> {
+  async create(
+    createProjectDto: CreateProjectDto,
+    ownerId: string,
+  ): Promise<Project> {
     const owner = await this.userRepository.findOneBy({ id: ownerId });
     if (!owner) {
       throw new Error('Owner not found');
     }
 
+    console.log('Creating project with owner:', owner);
+
     const project = this.projectRepository.create({
       ...createProjectDto,
-      owner: { id: ownerId },
-
+      owner: owner,
+      tags: Array.isArray(createProjectDto.tags)
+        ? createProjectDto.tags
+        : createProjectDto.tags
+        ? [createProjectDto.tags]
+        : undefined,
     });
 
-    const savedProject = await this.projectRepository.save(project);
-    return savedProject;
+    return this.projectRepository.save(project);
   }
 
-  async update(id: string, updateProjectDto: UpdateProjectDto): Promise<Project | null> {
+  async update(
+    id: string,
+    updateProjectDto: UpdateProjectDto,
+  ): Promise<Project | null> {
     const project = await this.projectRepository.findOneBy({ id });
     if (!project) return null;
 
@@ -82,48 +103,59 @@ export class ProjectService {
     return result.affected !== 0;
   }
 
-  async addMember(projectId: string, userId: string, role: ProjectRole): Promise<boolean> {
+  async addMember(
+    projectId: string,
+    userId: string,
+    role: ProjectRole,
+  ): Promise<boolean> {
     const project = await this.projectRepository.findOneBy({ id: projectId });
     const user = await this.userRepository.findOneBy({ id: userId });
 
     if (!project || !user) return false;
 
-    const member = new ProjectMember();
-    member.project = project;
-    member.user = user;
-    member.role = role;
+    const member = this.projectMemberRepository.create({
+      project,
+      user,
+      role,
+    });
 
-    await this.projectRepository.manager.save(member);
+    await this.projectMemberRepository.save(member);
     return true;
   }
 
   async removeMember(projectId: string, userId: string): Promise<boolean> {
-    const result = await this.projectRepository.manager.delete(ProjectMember, {
+    const result = await this.projectMemberRepository.delete({
       project: { id: projectId },
-      user: { id: userId }
+      user: { id: userId },
     });
     return result.affected !== 0;
   }
 
-  async updateStatus(projectId: string, status: string): Promise<Project | null> {
-    const project = await this.projectRepository.findOne({ where: { id: projectId } });
+  async updateStatus(
+    projectId: string,
+    status: string,
+  ): Promise<Project | null> {
+    const project = await this.projectRepository.findOne({
+      where: { id: projectId },
+    });
     if (!project) {
       return null;
     }
     project.status = status as ProjectStatus;
-    await this.projectRepository.save(project);
-    return project;
+    return this.projectRepository.save(project);
   }
 
-  async updateProgress(projectId: string, progress: number): Promise<Project | null> {
-    const project = await this.projectRepository.findOne({ where: { id: projectId } });
+  async updateProgress(
+    projectId: string,
+    progress: number,
+  ): Promise<Project | null> {
+    const project = await this.projectRepository.findOne({
+      where: { id: projectId },
+    });
     if (!project) {
       return null;
     }
     project.progress = progress;
-    await this.projectRepository.save(project);
-    return project;
+    return this.projectRepository.save(project);
   }
-
-
 }

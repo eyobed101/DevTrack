@@ -108,7 +108,7 @@ export class Project {
   startDate: Date;
 
   @Column({ type: 'timestamp', nullable: true })
-  endDate: Date;
+  dueDate: Date;
 
   @CreateDateColumn()
   createdAt: Date;

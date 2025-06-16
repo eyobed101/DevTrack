@@ -72,8 +72,7 @@ export class AuthService {
       signUpDto.password,
     );
 
-    console.log(`Creating user with email: ${signUpDto.email}, username: ${signUpDto.username}`);
-    console.log(`Hashed password: ${hashedPassword}`);
+ 
 
     const user = await this.usersService.create({
       ...signUpDto,

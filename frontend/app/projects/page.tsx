@@ -125,105 +125,161 @@ import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
+import { useEffect, useState } from "react"
+
+import { useSession } from "next-auth/react"
+import { Loader2 } from "lucide-react"
+import api from "@/lib/api"
+
+// ... (keep all your existing imports)
+
+// Update the Project interface to match your entity
+interface Project {
+  id: string
+  name: string
+  description: string
+  type: string // <-- Added this line
+  status: string
+  priority: string
+  healthScore: number
+  progress: number
+  viewType: string
+  budget?: number | null
+  tags?: string[] | null
+  isPublic: boolean
+  startDate?: Date | null
+  endDate?: Date | null
+  dueDate?: string | null // <-- Added dueDate property
+  createdAt: Date
+  updatedAt: Date
+  owner: {
+    id: string
+    username: string
+    firstName: string
+    lastName: string
+    avatarUrl?: string | null
+  }
+  members: Array<{
+    id: string
+    user: {
+      id: string
+      username: string
+      firstName: string
+      lastName: string
+      avatarUrl?: string | null
+    }
+    role: string
+  }>
+  team: string
+  assignees: Array<{
+    id: string
+    name: string
+    avatar?: string
+    role: string
+  }>
+}
+
+
+
 
 // Enhanced project schema with more detailed fields
-const projectSchema = z.object({
-  id: z.string(),
-  name: z.string().min(3, "Name must be at least 3 characters"),
-  description: z.string().optional(),
-  type: z.enum(["development", "design", "marketing", "operations", "research"]),
-  status: z.enum(["planning", "active", "on-hold", "completed", "archived"]),
-  priority: z.enum(["low", "medium", "high", "critical"]),
-  startDate: z.string(),
-  dueDate: z.string(),
-  team: z.string(),
-  healthScore: z.number().min(0).max(100),
-  progress: z.number().min(0).max(100),
-  budget: z.number().min(0).optional(),
-  viewType: z.enum(["list", "board", "calendar", "table"]),
-  assignees: z.array(z.object({
-    id: z.string(),
-    name: z.string(),
-    avatar: z.string().optional(),
-    role: z.enum(["lead", "member", "contributor"]),
-  })),
-  tags: z.array(z.string()).optional(),
-  isPublic: z.boolean().default(false),
-  createdAt: z.string().optional(),
-  updatedAt: z.string().optional(),
-})
+// const projectSchema = z.object({
+//   id: z.string(),
+//   name: z.string().min(3, "Name must be at least 3 characters"),
+//   description: z.string().optional(),
+//   type: z.enum(["development", "design", "marketing", "operations", "research"]),
+//   status: z.enum(["planning", "active", "on-hold", "completed", "archived"]),
+//   priority: z.enum(["low", "medium", "high", "critical"]),
+//   startDate: z.string(),
+//   dueDate: z.string(),
+//   team: z.string(),
+//   healthScore: z.number().min(0).max(100),
+//   progress: z.number().min(0).max(100),
+//   budget: z.number().min(0).optional(),
+//   viewType: z.enum(["list", "board", "calendar", "table"]),
+//   assignees: z.array(z.object({
+//     id: z.string(),
+//     name: z.string(),
+//     avatar: z.string().optional(),
+//     role: z.enum(["lead", "member", "contributor"]),
+//   })),
+//   tags: z.array(z.string()).optional(),
+//   isPublic: z.boolean().default(false),
+//   createdAt: z.string().optional(),
+//   updatedAt: z.string().optional(),
+// })
 
-// Sample data with enhanced fields
-const projectsData: Project[] = [
-  {
-    id: "proj-1",
-    name: "Website Redesign",
-    description: "Complete redesign of company website with new branding",
-    type: "design",
-    status: "active",
-    priority: "high",
-    startDate: "2023-11-01",
-    dueDate: "2023-12-15",
-    team: "Design Team",
-    healthScore: 75,
-    progress: 65,
-    budget: 15000,
-    viewType: "board",
-    assignees: [
-      { id: "user-1", name: "Alex Johnson", avatar: "/avatars/01.png", role: "lead" },
-      { id: "user-2", name: "Sam Lee", avatar: "/avatars/02.png", role: "member" }
-    ],
-    tags: ["design", "branding"],
-    isPublic: false,
-    createdAt: "2023-10-15",
-    updatedAt: "2023-11-10"
-  },
-  {
-    id: "proj-2",
-    name: "Mobile App Development",
-    description: "Build new mobile application for iOS and Android",
-    type: "development",
-    status: "active",
-    priority: "critical",
-    startDate: "2023-10-01",
-    dueDate: "2023-11-30",
-    team: "Dev Team",
-    healthScore: 90,
-    progress: 85,
-    budget: 50000,
-    viewType: "board",
-    assignees: [
-      { id: "user-3", name: "Taylor Swift", avatar: "/avatars/03.png", role: "lead" },
-      { id: "user-4", name: "Jamie Smith", avatar: "/avatars/04.png", role: "member" }
-    ],
-    tags: ["mobile", "react-native"],
-    isPublic: true,
-    createdAt: "2023-09-20",
-    updatedAt: "2023-11-15"
-  },
-  {
-    id: "proj-3",
-    name: "Marketing Campaign Q1",
-    description: "Launch new marketing campaign for Q1 products",
-    type: "marketing",
-    status: "planning",
-    priority: "medium",
-    startDate: "2024-01-01",
-    dueDate: "2024-01-20",
-    team: "Marketing",
-    healthScore: 30,
-    progress: 10,
-    budget: 20000,
-    viewType: "list",
-    assignees: [
-      { id: "user-5", name: "Pat Brown", avatar: "/avatars/05.png", role: "lead" }
-    ],
-    tags: ["marketing", "campaign"],
-    isPublic: false,
-    createdAt: "2023-11-01",
-    updatedAt: "2023-11-05"
-  },
-]
+// // Sample data with enhanced fields
+// const projectsData: Project[] = [
+//   {
+//     id: "proj-1",
+//     name: "Website Redesign",
+//     description: "Complete redesign of company website with new branding",
+//     type: "design",
+//     status: "active",
+//     priority: "high",
+//     startDate: "2023-11-01",
+//     dueDate: "2023-12-15",
+//     team: "Design Team",
+//     healthScore: 75,
+//     progress: 65,
+//     budget: 15000,
+//     viewType: "board",
+//     assignees: [
+//       { id: "user-1", name: "Alex Johnson", avatar: "/avatars/01.png", role: "lead" },
+//       { id: "user-2", name: "Sam Lee", avatar: "/avatars/02.png", role: "member" }
+//     ],
+//     tags: ["design", "branding"],
+//     isPublic: false,
+//     createdAt: "2023-10-15",
+//     updatedAt: "2023-11-10"
+//   },
+//   {
+//     id: "proj-2",
+//     name: "Mobile App Development",
+//     description: "Build new mobile application for iOS and Android",
+//     type: "development",
+//     status: "active",
+//     priority: "critical",
+//     startDate: "2023-10-01",
+//     dueDate: "2023-11-30",
+//     team: "Dev Team",
+//     healthScore: 90,
+//     progress: 85,
+//     budget: 50000,
+//     viewType: "board",
+//     assignees: [
+//       { id: "user-3", name: "Taylor Swift", avatar: "/avatars/03.png", role: "lead" },
+//       { id: "user-4", name: "Jamie Smith", avatar: "/avatars/04.png", role: "member" }
+//     ],
+//     tags: ["mobile", "react-native"],
+//     isPublic: true,
+//     createdAt: "2023-09-20",
+//     updatedAt: "2023-11-15"
+//   },
+//   {
+//     id: "proj-3",
+//     name: "Marketing Campaign Q1",
+//     description: "Launch new marketing campaign for Q1 products",
+//     type: "marketing",
+//     status: "planning",
+//     priority: "medium",
+//     startDate: "2024-01-01",
+//     dueDate: "2024-01-20",
+//     team: "Marketing",
+//     healthScore: 30,
+//     progress: 10,
+//     budget: 20000,
+//     viewType: "list",
+//     assignees: [
+//       { id: "user-5", name: "Pat Brown", avatar: "/avatars/05.png", role: "lead" }
+//     ],
+//     tags: ["marketing", "campaign"],
+//     isPublic: false,
+//     createdAt: "2023-11-01",
+//     updatedAt: "2023-11-05"
+//   },
+// ]
 
 // Health score indicator component
 function HealthIndicator({ score }: { score: number }) {
@@ -282,22 +338,44 @@ function DragHandle({ id }: { id: string }) {
   )
 }
 
-type Project = z.infer<typeof projectSchema>;
+// type Project = z.infer<typeof projectSchema>;
+
+// Accepts any shape as long as it matches the columns used in the table
+type TableProject = {
+  id: string;
+  name: string;
+  description: string;
+  type: string;
+  status: "planning" | "active" | "on-hold" | "completed" | "archived";
+  priority: "low" | "medium" | "high" | "critical";
+  startDate: string;
+  dueDate: string;
+  team: string;
+  healthScore: number;
+  progress: number;
+  budget: number;
+  viewType: "list" | "board" | "calendar" | "table";
+  assignees: Array<{ id: string; name: string; avatar?: string; role: string }>;
+  tags: string[];
+  isPublic: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
 
 interface ProjectsTableProps {
-  projects: Project[];
+  projects: TableProject[];
   onViewDetails: (projectId: string) => void;
-  onEditProject: (project: Project) => void;
+  onEditProject: (project: TableProject) => void;
   onDeleteProject: (projectId: string) => void;
-  onDuplicateProject: (project: Project) => void;
-  onSwitchView: (projectId: string, viewType: Project["viewType"]) => void;
-  onCreateTemplate: (project: Project) => void;
+  onDuplicateProject: (project: TableProject) => void;
+  onSwitchView: (projectId: string, viewType: TableProject["viewType"]) => void;
+  onCreateTemplate: (project: TableProject) => void;
   onQuickAssign: (projectId: string, userId: string) => void;
   userRole: "owner" | "manager" | "member";
   onAddProject: () => void;
 }
 
-function DraggableRow({ row }: { row: Row<Project> }) {
+function DraggableRow({ row }: { row: Row<TableProject> }) {
   const { setNodeRef, transform, transition, isDragging } = useSortable({ id: row.original.id });
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -344,7 +422,7 @@ export function ProjectsTable({
   })
   const [searchQuery, setSearchQuery] = React.useState("")
   const [activeTab, setActiveTab] = React.useState(userRole === "member" ? "myWork" : "all")
-  
+
   const sortableId = React.useId()
   const sensors = useSensors(
     useSensor(MouseSensor, {}),
@@ -357,12 +435,15 @@ export function ProjectsTable({
     [data]
   )
 
+
+
+
   // Filter data based on active tab
   const filteredData = React.useMemo(() => {
     let result = [...data]
-    
+
     if (activeTab === "myWork") {
-      result = result.filter(project => 
+      result = result.filter(project =>
         project.assignees.some(a => a.id === "user-1") // Replace with current user ID
       )
     } else if (activeTab === "active") {
@@ -370,7 +451,7 @@ export function ProjectsTable({
     } else if (activeTab === "completed") {
       result = result.filter(project => project.status === "completed")
     }
-    
+
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       result = result.filter(project =>
@@ -382,11 +463,11 @@ export function ProjectsTable({
         project.assignees.some(a => a.name.toLowerCase().includes(query))
       )
     }
-    
+
     return result
   }, [data, activeTab, searchQuery])
 
-  const columns: ColumnDef<Project>[] = [
+  const columns: ColumnDef<TableProject>[] = [
     {
       id: "drag",
       header: () => null,
@@ -458,7 +539,7 @@ export function ProjectsTable({
           archived: { label: "Archived", color: "bg-purple-500" },
         }
         const status = statusMap[row.original.status]
-        
+
         return (
           <div className="flex items-center gap-2">
             <span className={`size-2 rounded-full ${status.color}`} />
@@ -478,7 +559,7 @@ export function ProjectsTable({
           critical: { label: "Critical", color: "bg-red-500" },
         }
         const priority = priorityMap[row.original.priority]
-        
+
         return (
           <Badge variant="outline" className="gap-1">
             <span className={`size-2 rounded-full ${priority.color}`} />
@@ -497,7 +578,7 @@ export function ProjectsTable({
       header: "Due Date",
       cell: ({ row }) => (
         <div className="flex items-center gap-2">
-          {format(new Date(row.original.dueDate), "MMM dd, yyyy")}
+          {row.original.dueDate ? format(new Date(row.original.dueDate), "MMM dd, yyyy") : ""}
           {new Date(row.original.dueDate) < new Date() && row.original.status !== "completed" && (
             <Tooltip>
               <TooltipTrigger>
@@ -547,7 +628,7 @@ export function ProjectsTable({
             <DropdownMenuItem onClick={() => onViewDetails(row.original.id)}>
               View Details
             </DropdownMenuItem>
-            
+
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>Switch View</DropdownMenuSubTrigger>
               <DropdownMenuSubContent>
@@ -565,13 +646,13 @@ export function ProjectsTable({
                 </DropdownMenuItem>
               </DropdownMenuSubContent>
             </DropdownMenuSub>
-            
+
             {userRole !== "member" && (
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>Quick Assign</DropdownMenuSubTrigger>
                 <DropdownMenuSubContent>
                   {row.original.assignees.map(assignee => (
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       key={assignee.id}
                       onClick={() => onQuickAssign(row.original.id, assignee.id)}
                     >
@@ -581,22 +662,22 @@ export function ProjectsTable({
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
             )}
-            
+
             <DropdownMenuItem onClick={() => onEditProject(row.original)}>
               Edit
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onDuplicateProject(row.original)}>
               Duplicate
             </DropdownMenuItem>
-            
+
             {userRole === "owner" && (
               <DropdownMenuItem onClick={() => onCreateTemplate(row.original)}>
                 <IconTemplate className="mr-2 size-4" /> Save as Template
               </DropdownMenuItem>
             )}
-            
+
             <DropdownMenuSeparator />
-            <DropdownMenuItem 
+            <DropdownMenuItem
               variant="destructive"
               onClick={() => onDeleteProject(row.original.id)}
             >
@@ -660,7 +741,7 @@ export function ProjectsTable({
           </div>
 
         </div>
-        
+
         {/* View tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
@@ -675,7 +756,7 @@ export function ProjectsTable({
           </TabsList>
         </Tabs>
       </div>
-      
+
       {/* Table controls */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -712,7 +793,7 @@ export function ProjectsTable({
           </DropdownMenu>
         </div>
       </div>
-      
+
       {/* Main table */}
       <div className="overflow-hidden rounded-lg border">
         <DndContext
@@ -732,9 +813,9 @@ export function ProjectsTable({
                         {header.isPlaceholder
                           ? null
                           : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
                       </TableHead>
                     )
                   })}
@@ -765,7 +846,7 @@ export function ProjectsTable({
           </Table>
         </DndContext>
       </div>
-      
+
       {/* Pagination */}
       <div className="flex items-center justify-between">
         <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
@@ -865,8 +946,8 @@ function ProjectFormDialog({
       type: "development",
       status: "planning",
       priority: "medium",
-      startDate: format(new Date(), "yyyy-MM-dd"),
-      dueDate: format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), "yyyy-MM-dd"),
+      startDate: new Date(),
+      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
       team: "",
       healthScore: 50,
       progress: 0,
@@ -894,7 +975,7 @@ function ProjectFormDialog({
           {project ? "Edit Project" : "Create New Project"}
         </DialogTitle>
       </DialogHeader>
-      
+
       <div className="grid gap-4 py-4">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-4">
@@ -915,7 +996,7 @@ function ProjectFormDialog({
               Advanced
             </TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="details" className="pt-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -927,7 +1008,7 @@ function ProjectFormDialog({
                   placeholder="Enter project name"
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="type">Project Type</Label>
                 <Select
@@ -946,7 +1027,7 @@ function ProjectFormDialog({
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="space-y-2 col-span-2">
                 <Label htmlFor="description">Description</Label>
                 <Textarea
@@ -959,7 +1040,7 @@ function ProjectFormDialog({
               </div>
             </div>
           </TabsContent>
-          
+
           <TabsContent value="settings" className="pt-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -980,7 +1061,7 @@ function ProjectFormDialog({
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="priority">Priority</Label>
                 <Select
@@ -998,27 +1079,27 @@ function ProjectFormDialog({
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="startDate">Start Date</Label>
                 <Input
                   id="startDate"
                   type="date"
-                  value={formData.startDate}
+                  value={formData.startDate instanceof Date ? format(formData.startDate, "yyyy-MM-dd") : (formData.startDate ?? "")}
                   onChange={(e) => handleChange("startDate", e.target.value)}
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="dueDate">Due Date</Label>
                 <Input
                   id="dueDate"
                   type="date"
-                  value={formData.dueDate}
+                  value={formData.dueDate ?? ""}
                   onChange={(e) => handleChange("dueDate", e.target.value)}
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="viewType">Default View</Label>
                 <Select
@@ -1036,7 +1117,7 @@ function ProjectFormDialog({
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="healthScore">Initial Health Score</Label>
                 <Input
@@ -1050,7 +1131,7 @@ function ProjectFormDialog({
               </div>
             </div>
           </TabsContent>
-          
+
           <TabsContent value="team" className="pt-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -1062,7 +1143,7 @@ function ProjectFormDialog({
                   placeholder="Enter team name"
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label>Assignees</Label>
                 <div className="flex items-center gap-2">
@@ -1081,7 +1162,7 @@ function ProjectFormDialog({
               </div>
             </div>
           </TabsContent>
-          
+
           <TabsContent value="advanced" className="pt-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -1093,19 +1174,19 @@ function ProjectFormDialog({
                   placeholder="Enter tags, separated by commas"
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="budget">Budget ($)</Label>
                 <Input
                   id="budget"
                   type="number"
                   min="0"
-                  value={formData.budget}
-                  onChange={(e) => handleChange("budget", parseInt(e.target.value))}
+                  value={formData.budget ?? ""}
+                  onChange={(e) => handleChange("budget", e.target.value === "" ? null : parseInt(e.target.value))}
                   placeholder="Enter budget amount"
                 />
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <Switch
                   id="isPublic"
@@ -1118,7 +1199,7 @@ function ProjectFormDialog({
           </TabsContent>
         </Tabs>
       </div>
-      
+
       <DialogFooter>
         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
           Cancel
@@ -1133,10 +1214,129 @@ function ProjectFormDialog({
 
 export default function ProjectsPage() {
   const router = useRouter()
-  const [projects, setProjects] = React.useState<Project[]>(projectsData)
-  const [isDialogOpen, setIsDialogOpen] = React.useState(false)
+  const { data: session } = useSession()
+  const [projects, setProjects] = useState<Project[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [currentProject, setCurrentProject] = React.useState<Project | null>(null)
   const [userRole, setUserRole] = React.useState<"owner" | "manager" | "member">("owner")
+
+
+  // Fetch projects from API
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        setIsLoading(true)
+        const response = await api.get('/projects')
+
+        console.log('Fetched projects:', response.data)
+
+        if (response.status < 200 || response.status >= 300) {
+          throw new Error('Failed to fetch projects')
+        }
+
+        const data = response.data.data
+        setProjects(data)
+      } catch (error) {
+        toast.error('Error loading projects')
+        console.error(error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    if (session) {
+      fetchProjects()
+    }
+  }, [session])
+
+
+  const tableProjects = projects.map(project => ({
+    id: project.id,
+    name: project.name,
+    description: project.description,
+    type: "development", // You may want to add this to your model
+    status: project.status as "planning" | "active" | "on-hold" | "completed" | "archived",
+    priority: project.priority.toLowerCase() as "low" | "medium" | "high" | "critical",
+    startDate: project.startDate ? format(new Date(project.startDate), 'yyyy-MM-dd') : '',
+    dueDate: project.dueDate ? format(new Date(project.dueDate), 'yyyy-MM-dd') : '',
+    team: project.owner?.firstName + ' ' + project.owner?.lastName,
+    healthScore: project.healthScore,
+    progress: project.progress,
+    budget: project.budget || 0,
+    viewType: project.viewType.toLowerCase() as "list" | "board" | "calendar" | "table",
+    assignees: [
+      {
+        id: project.owner?.id,
+        name: `${project.owner?.firstName} ${project.owner?.lastName}`,
+        avatar: project.owner?.avatarUrl || undefined,
+        role: "lead"
+      },
+      ...project.members?.map(member => ({
+        id: member.user.id,
+        name: `${member.user.firstName} ${member.user.lastName}`,
+        avatar: member.user.avatarUrl || undefined,
+        role: member.role.toLowerCase() as "lead" | "member" | "contributor"
+      }))
+    ],
+    tags: project.tags || [],
+    isPublic: project.isPublic,
+    createdAt: format(new Date(project.createdAt), 'yyyy-MM-dd'),
+    updatedAt: format(new Date(project.updatedAt), 'yyyy-MM-dd')
+  }))
+
+   // Handle project creation
+  const handleSubmitProject = async (data: Partial<Project>) => {
+  try {
+    const method = currentProject ? 'put' : 'post';
+    const url = currentProject ? `/projects/${currentProject.id}` : '/projects';
+
+    console.log("data", data)
+    const response = await api[method](url, data);
+
+    const result = response.data;
+    
+    if (currentProject) {
+      setProjects(prev => prev.map(p => p.id === currentProject.id ? result : p));
+      toast.success("Project updated successfully");
+    } else {
+      setProjects(prev => [...prev, result]);
+      toast.success("Project created successfully");
+    }
+  } catch (error) {
+
+    console.log(error)
+    toast.error(
+      typeof error === "object" && error !== null && "response" in error && (error as any).response?.data?.message
+        ? (error as any).response.data.message
+        : error && typeof error === "object" && "message" in error
+        ? (error as any).message
+        : (currentProject ? 'Failed to update project' : 'Failed to create project')
+    );
+  } finally {
+    setIsDialogOpen(false);
+  }
+};
+
+  const handleDeleteProject = async (projectId: string) => {
+    try {
+      const response = await api.delete(`/projects/${projectId}`)
+
+      if (response.status < 200 || response.status >= 300) {
+        throw new Error('Failed to delete project')
+      }
+
+      setProjects(prev => prev.filter(p => p.id !== projectId))
+      toast.success("Project deleted successfully")
+    } catch (error) {
+      if (error && typeof error === "object" && "message" in error) {
+        toast.error((error as { message?: string }).message || "Delete failed")
+      } else {
+        toast.error("Delete failed")
+      }
+    }
+  }
+
 
   const handleViewDetails = (projectId: string) => {
     router.push(`/projects/${projectId}`)
@@ -1147,51 +1347,69 @@ export default function ProjectsPage() {
     setIsDialogOpen(true)
   }
 
-  const handleAddProject = () => {
-    setCurrentProject(null)
-    setIsDialogOpen(true)
-  }
+const handleAddProject = () => {
+  setCurrentProject(null)
+  setIsDialogOpen(true)
+}
 
-  const handleDeleteProject = (projectId: string) => {
-    setProjects(prev => prev.filter(p => p.id !== projectId))
-    toast.success("Project deleted successfully")
-  }
-
-  const handleDuplicateProject = (project: Project) => {
+  const handleDuplicateProject = (project: TableProject) => {
+    // Convert TableProject to Project with minimal required fields for duplication
     const newProject: Project = {
-      ...project,
       id: `proj-${Date.now()}`,
       name: `${project.name} (Copy)`,
-      status: "planning" as Project["status"],
-      progress: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      // Ensure all required fields are present
-      type: project.type,
+      description: project.description,
+      type: project.type, // Added type
+      status: project.status,
       priority: project.priority,
-      startDate: project.startDate,
-      dueDate: project.dueDate,
-      team: project.team,
       healthScore: project.healthScore,
-      budget: project.budget,
+      progress: 0,
       viewType: project.viewType,
-      assignees: project.assignees,
+      budget: project.budget,
       tags: project.tags,
       isPublic: project.isPublic,
-      description: project.description,
+      startDate: project.startDate ? new Date(project.startDate) : undefined,
+      endDate: project.dueDate ? new Date(project.dueDate) : undefined,
+      dueDate: project.dueDate, // Optional, if needed
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      owner: {
+        id: project.assignees[0]?.id || "",
+        username: "",
+        firstName: project.assignees[0]?.name?.split(" ")[0] || "",
+        lastName: project.assignees[0]?.name?.split(" ")[1] || "",
+        avatarUrl: project.assignees[0]?.avatar || null,
+      },
+      members: project.assignees.slice(1).map(a => ({
+        id: a.id,
+        user: {
+          id: a.id,
+          username: "",
+          firstName: a.name?.split(" ")[0] || "",
+          lastName: a.name?.split(" ")[1] || "",
+          avatarUrl: a.avatar || null,
+        },
+        role: a.role,
+      })),
+      team: project.team, // Added team
+      assignees: project.assignees.map(a => ({
+        id: a.id,
+        name: a.name,
+        avatar: a.avatar,
+        role: a.role,
+      })), // Added assignees
     }
     setProjects(prev => [...prev, newProject])
     toast.success("Project duplicated successfully")
   }
 
   const handleSwitchView = (projectId: string, viewType: Project["viewType"]) => {
-    setProjects(prev => prev.map(p => 
+    setProjects(prev => prev.map(p =>
       p.id === projectId ? { ...p, viewType } : p
     ))
     toast.success(`View switched to ${viewType}`)
   }
 
-  const handleCreateTemplate = (project: Project) => {
+  const handleCreateTemplate = (project: TableProject) => {
     toast.success(`Template created from "${project.name}"`)
   }
 
@@ -1199,24 +1417,14 @@ export default function ProjectsPage() {
     toast.success(`User assigned to project`)
   }
 
-  const handleSubmitProject = (data: Partial<Project>) => {
-    if (currentProject) {
-      // Update existing project
-      setProjects(prev => prev.map(p => 
-        p.id === currentProject.id ? { ...p, ...data, updatedAt: new Date().toISOString() } as Project : p
-      ))
-      toast.success("Project updated successfully")
-    } else {
-      // Create new project
-      const newProject: Project = {
-        ...data as Required<Project>,
-        id: `proj-${Date.now()}`,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }
-      setProjects(prev => [...prev, newProject])
-      toast.success("Project created successfully")
-    }
+  
+
+   if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="animate-spin" />
+      </div>
+    )
   }
 
   return (
@@ -1250,7 +1458,7 @@ export default function ProjectsPage() {
                   <SelectItem value="member">Member</SelectItem>
                 </SelectContent>
               </Select>
-              
+
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
                   <Button onClick={handleAddProject}>
@@ -1268,18 +1476,24 @@ export default function ProjectsPage() {
               </Dialog>
             </div>
           </div>
-          
+
           <ProjectsTable 
-            projects={projects}
+            projects={tableProjects}
             onViewDetails={handleViewDetails}
-            onEditProject={handleEditProject}
+            onEditProject={(project) => {
+              setCurrentProject(projects.find(p => p.id === project.id) || null)
+              setIsDialogOpen(true)
+            }}
             onDeleteProject={handleDeleteProject}
             onDuplicateProject={handleDuplicateProject}
             onSwitchView={handleSwitchView}
             onCreateTemplate={handleCreateTemplate}
             onQuickAssign={handleQuickAssign}
             userRole={userRole}
-            onAddProject={handleAddProject}
+            onAddProject={() => {
+              setCurrentProject(null)
+              setIsDialogOpen(true)
+            }}
           />
         </div>
       </SidebarInset>

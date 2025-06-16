@@ -28,7 +28,7 @@ api.interceptors.response.use(
   async (error) => {
     if (error.response?.status === 401) {
       // Handle token refresh or redirect to login
-      window.location.href = '/auth/login';
+      window.location.href = '/login';
     }
     return Promise.reject(error);
   }

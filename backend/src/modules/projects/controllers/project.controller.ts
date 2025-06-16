@@ -1,334 +1,407 @@
 // src/modules/projects/project.controller.ts
-import { Request, Response } from 'express';
-import { validate } from '../../../middlewares/validator';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Param,
+  Query,
+  Body,
+  Req,
+  UseGuards,
+  HttpStatus,
+  HttpException,
+} from '@nestjs/common';
 import { ProjectService } from '../project.service';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { CreateProjectDto, UpdateProjectDto, AddMemberDto } from '../project.dto';
+import { Request } from 'express';
 
-// Extend Express Request interface to include user with id
+// Extend Express User type globally to include id
 declare global {
   namespace Express {
     interface User {
       id: string;
       [key: string]: any;
     }
-    interface Request {
-      user?: User;
-    }
   }
 }
-import { AppDataSource } from '../../../config/database';
-import { Project } from '../entities/project.entity';
-import { User } from '../../users/entities/user.entity';
-import { logger } from '../../../config/logger';
-import {
-  CreateProjectDto,
-  UpdateProjectDto,
-  AddMemberDto,
-} from '../project.dto';
 
+interface AuthenticatedRequest extends Request {
+  user: Express.User;
+}
+
+@Controller('projects')
+@UseGuards(JwtAuthGuard)
 export class ProjectController {
-  private projectService: ProjectService;
+  constructor(private readonly projectService: ProjectService) {}
 
-  constructor() {
-    const projectRepository = AppDataSource.getRepository(Project);
-    const userRepository = AppDataSource.getRepository(User);
-    this.projectService = new ProjectService(projectRepository, userRepository);
-
-    this.getAllProjects = this.getAllProjects.bind(this);
-    this.getProjectById = this.getProjectById.bind(this);
-    this.createProject = this.createProject.bind(this);
-    this.updateProject = this.updateProject.bind(this);
-    this.deleteProject = this.deleteProject.bind(this);
-    this.addMember = this.addMember.bind(this);
-    this.removeMember = this.removeMember.bind(this);
-    this.setProjectStatus = this.setProjectStatus.bind(this);
-    this.updateProjectProgress = this.updateProjectProgress.bind(this);
-  }
-
-  async getAllProjects(req: Request, res: Response): Promise<void> {
+  @Get()
+  async getAllProjects(
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+    @Query('status') status?: string,
+    @Query('healthScore') healthScore?: number,
+  ) {
     try {
-      const { page = 1, limit = 10, status, healthScore } = req.query;
-
-      const options = {
-        page: parseInt(page as string),
-        limit: parseInt(limit as string),
-        status: status as string,
-        healthScore: healthScore ? parseInt(healthScore as string) : undefined
-      };
-
-      const projects = await this.projectService.findAll(options.page, options.limit);
-      res.status(200).json({
+      const projects = await this.projectService.findAll(page, limit);
+      return {
         success: true,
         data: projects,
         pagination: {
-          page: options.page,
-          limit: options.limit,
-          total: projects.length
-        }
-      });
+          page,
+          limit,
+          total: projects.length,
+        },
+      };
     } catch (error) {
-      logger.error('Error fetching projects:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to fetch projects'
-      });
+      console.log('Error fetching projects:', error);
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Failed to fetch projects',
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
-  async getUserProjects(req: Request, res: Response): Promise<void> {
+  @Get('user')
+  async getUserProjects(
+    @Req() req: Request,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ) {
     try {
       if (!req.user?.id) {
-        res.status(401).json({
-          success: false,
-          message: 'Authentication required'
-        });
-        return;
+        throw new HttpException(
+          {
+            success: false,
+            message: 'Authentication required',
+          },
+          HttpStatus.UNAUTHORIZED,
+        );
       }
-
-      const { page = 1, limit = 10 } = req.query;
-      const options = {
-        page: parseInt(page as string),
-        limit: parseInt(limit as string)
-      };
 
       const projects = await this.projectService.findUserProjects(
         req.user.id,
-        options.page,
-        options.limit
+        page,
+        limit,
       );
 
-      res.status(200).json({
+      return {
         success: true,
         data: projects,
         pagination: {
-          page: options.page,
-          limit: options.limit,
-          total: projects.length
-        }
-      });
+          page,
+          limit,
+          total: projects.length,
+        },
+      };
     } catch (error) {
-      logger.error(`Error fetching projects for user ${req.user?.id}:`, error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to fetch user projects'
-      });
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Failed to fetch user projects',
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
-  async getProjectById(req: Request, res: Response): Promise<void> {
+  @Get(':id')
+  async getProjectById(@Param('id') id: string) {
     try {
-      const project = await this.projectService.findById(req.params.id);
+      const project = await this.projectService.findById(id);
       if (!project) {
-        res.status(404).json({
-          success: false,
-          message: 'Project not found'
-        });
-        return;
+        throw new HttpException(
+          {
+            success: false,
+            message: 'Project not found',
+          },
+          HttpStatus.NOT_FOUND,
+        );
       }
-      res.status(200).json({
+      return {
         success: true,
-        data: project
-      });
+        data: project,
+      };
     } catch (error) {
-      logger.error(`Error fetching project ${req.params.id}:`, error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to fetch project'
-      });
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Failed to fetch project by id',
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
-  // @validate(CreateProjectDto)
-  async createProject(req: Request, res: Response): Promise<void> {
+  @Post()
+  async createProject(
+    @Req() req: AuthenticatedRequest,
+    @Body() createProjectDto: CreateProjectDto,
+  ) {
     try {
-      if (!req.user || typeof req.user.id !== 'string') {
-        res.status(400).json({
-          success: false,
-          message: 'Invalid user information'
-        });
-        return;
+      console.log('Creating project with data:', createProjectDto);
+      console.log('Authenticated user:', req.user);
+      if (!req.user || typeof req.user.userId !== 'string') {
+        throw new HttpException(
+          {
+            success: false,
+            message: 'Invalid user information',
+          },
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
       const projectData = {
-        ...req.body,
-        // Convert dates to Date objects
-        startDate: req.body.startDate ? new Date(req.body.startDate) : null,
-        endDate: req.body.endDate ? new Date(req.body.endDate) : null,
-        // Convert tags to array if needed
-        tags: Array.isArray(req.body.tags) ? req.body.tags : [req.body.tags].filter(Boolean),
-        // Set default values
-        healthScore: req.body.healthScore || 50,
-        progress: req.body.progress || 0
+        ...createProjectDto,
+        startDate: createProjectDto.startDate
+          ? new Date(createProjectDto.startDate).toISOString()
+          : undefined,
+        endDate: createProjectDto.endDate
+          ? new Date(createProjectDto.endDate).toISOString()
+          : undefined,
+        tags: Array.isArray(createProjectDto.tags)
+          ? (createProjectDto.tags as string[]).filter((tag): tag is string => typeof tag === 'string')
+          : typeof createProjectDto.tags === 'string'
+            ? createProjectDto.tags
+            : undefined,
+        healthScore: createProjectDto.healthScore || 50,
+        progress: createProjectDto.progress || 0,
       };
 
       const project = await this.projectService.create(projectData, req.user.id);
-      res.status(201).json({
+      return {
         success: true,
         data: project,
-        message: 'Project created successfully'
-      });
+        message: 'Project created successfully',
+      };
     } catch (error) {
-      logger.error('Error creating project:', error);
-      res.status(400).json({
-        success: false,
-        message: error instanceof Error ? error.message : 'Project creation failed'
-      });
+      throw new HttpException(
+        {
+          success: false,
+          message:
+            error instanceof Error ? error.message : 'Project creation failed',
+        },
+        HttpStatus.BAD_REQUEST,
+      );
     }
   }
 
-  // @validate(UpdateProjectDto)
-  async updateProject(req: Request, res: Response): Promise<void> {
+  @Put(':id')
+  async updateProject(
+    @Param('id') id: string,
+    @Body() updateProjectDto: UpdateProjectDto,
+  ) {
     try {
       const updateData = {
-        ...req.body,
-        startDate: req.body.startDate ? new Date(req.body.startDate) : undefined,
-        endDate: req.body.endDate ? new Date(req.body.endDate) : undefined,
-        tags: req.body.tags ?
-          (Array.isArray(req.body.tags) ? req.body.tags : [req.body.tags].filter(Boolean))
-          : undefined
+        ...updateProjectDto,
+        startDate: updateProjectDto.startDate
+          ? new Date(updateProjectDto.startDate)
+          : undefined,
+        endDate: updateProjectDto.endDate
+          ? new Date(updateProjectDto.endDate)
+          : undefined,
+        tags: updateProjectDto.tags
+          ? Array.isArray(updateProjectDto.tags)
+            ? updateProjectDto.tags
+            : [updateProjectDto.tags].filter(Boolean)
+          : undefined,
       };
 
-      const project = await this.projectService.update(req.params.id, updateData);
+      const project = await this.projectService.update(id, updateData);
       if (!project) {
-        res.status(404).json({
-          success: false,
-          message: 'Project not found'
-        });
-        return;
+        throw new HttpException(
+          {
+            success: false,
+            message: 'Project not found',
+          },
+          HttpStatus.NOT_FOUND,
+        );
       }
-      res.status(200).json({
+      return {
         success: true,
         data: project,
-        message: 'Project updated successfully'
-      });
+        message: 'Project updated successfully',
+      };
     } catch (error) {
-      logger.error(`Error updating project ${req.params.id}:`, error);
-      res.status(400).json({
-        success: false,
-        message: error instanceof Error ? error.message : 'Project update failed'
-      });
-    }
-  }
-
-  async deleteProject(req: Request, res: Response): Promise<void> {
-    try {
-      const result = await this.projectService.delete(req.params.id);
-      if (!result) {
-        res.status(404).json({
+      throw new HttpException(
+        {
           success: false,
-          message: 'Project not found'
-        });
-        return;
-      }
-      res.status(200).json({
-        success: true,
-        message: 'Project deleted successfully'
-      });
-    } catch (error) {
-      logger.error(`Error deleting project ${req.params.id}:`, error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to delete project'
-      });
+          message:
+            error instanceof Error ? error.message : 'Project update failed',
+        },
+        HttpStatus.BAD_REQUEST,
+      );
     }
   }
 
-  // @validate(AddMemberDto)
-  async addMember(req: Request, res: Response): Promise<void> {
+  @Delete(':id')
+  async deleteProject(@Param('id') id: string) {
     try {
-      const { userId, role } = req.body;
-      const result = await this.projectService.addMember(req.params.id, userId, role);
+      const result = await this.projectService.delete(id);
       if (!result) {
-        res.status(404).json({
-          success: false,
-          message: 'Project or user not found'
-        });
-        return;
+        throw new HttpException(
+          {
+            success: false,
+            message: 'Project not found',
+          },
+          HttpStatus.NOT_FOUND,
+        );
       }
-      res.status(200).json({
+      return {
         success: true,
-        message: 'Member added successfully'
-      });
+        message: 'Project deleted successfully',
+      };
     } catch (error) {
-      logger.error(`Error adding member to project ${req.params.id}:`, error);
-      res.status(400).json({
-        success: false,
-        message: error instanceof Error ? error.message : 'Failed to add member'
-      });
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Failed to delete project',
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
-  async removeMember(req: Request, res: Response): Promise<void> {
+  @Post(':id/members')
+  async addMember(
+    @Param('id') id: string,
+    @Body() addMemberDto: AddMemberDto,
+  ) {
     try {
-      const result = await this.projectService.removeMember(req.params.id, req.params.userId);
+      const result = await this.projectService.addMember(
+        id,
+        addMemberDto.userId,
+        addMemberDto.role,
+      );
       if (!result) {
-        res.status(404).json({
-          success: false,
-          message: 'Project, user or membership not found'
-        });
-        return;
+        throw new HttpException(
+          {
+            success: false,
+            message: 'Project or user not found',
+          },
+          HttpStatus.NOT_FOUND,
+        );
       }
-      res.status(200).json({
+      return {
         success: true,
-        message: 'Member removed successfully'
-      });
+        message: 'Member added successfully',
+      };
     } catch (error) {
-      logger.error(`Error removing member from project ${req.params.id}:`, error);
-      res.status(400).json({
-        success: false,
-        message: error instanceof Error ? error.message : 'Failed to remove member'
-      });
+      throw new HttpException(
+        {
+          success: false,
+          message:
+            error instanceof Error ? error.message : 'Failed to add member',
+        },
+        HttpStatus.BAD_REQUEST,
+      );
     }
   }
 
-  // @validate(SetProjectStatusDto)
-  async setProjectStatus(req: Request, res: Response): Promise<void> {
+  @Delete(':id/members/:userId')
+  async removeMember(
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+  ) {
     try {
-      const { status } = req.body;
-      const project = await this.projectService.updateStatus(req.params.id, status);
+      const result = await this.projectService.removeMember(id, userId);
+      if (!result) {
+        throw new HttpException(
+          {
+            success: false,
+            message: 'Project, user or membership not found',
+          },
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      return {
+        success: true,
+        message: 'Member removed successfully',
+      };
+    } catch (error) {
+      throw new HttpException(
+        {
+          success: false,
+          message:
+            error instanceof Error ? error.message : 'Failed to remove member',
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  @Put(':id/status')
+  async setProjectStatus(
+    @Param('id') id: string,
+    @Body('status') status: string,
+  ) {
+    try {
+      const project = await this.projectService.updateStatus(id, status);
       if (!project) {
-        res.status(404).json({
-          success: false,
-          message: 'Project not found'
-        });
-        return;
+        throw new HttpException(
+          {
+            success: false,
+            message: 'Project not found',
+          },
+          HttpStatus.NOT_FOUND,
+        );
       }
-      res.status(200).json({
+      return {
         success: true,
         data: project,
-        message: 'Project status updated successfully'
-      });
+        message: 'Project status updated successfully',
+      };
     } catch (error) {
-      logger.error(`Error updating project status ${req.params.id}:`, error);
-      res.status(400).json({
-        success: false,
-        message: error instanceof Error ? error.message : 'Failed to update project status'
-      });
+      throw new HttpException(
+        {
+          success: false,
+          message:
+            error instanceof Error
+              ? error.message
+              : 'Failed to update project status',
+        },
+        HttpStatus.BAD_REQUEST,
+      );
     }
   }
 
-  // @validate(UpdateProjectProgressDto)
-  async updateProjectProgress(req: Request, res: Response): Promise<void> {
+  @Put(':id/progress')
+  async updateProjectProgress(
+    @Param('id') id: string,
+    @Body('progress') progress: number,
+  ) {
     try {
-      const { progress } = req.body;
-      const project = await this.projectService.updateProgress(req.params.id, progress);
+      const project = await this.projectService.updateProgress(id, progress);
       if (!project) {
-        res.status(404).json({
-          success: false,
-          message: 'Project not found'
-        });
-        return;
+        throw new HttpException(
+          {
+            success: false,
+            message: 'Project not found',
+          },
+          HttpStatus.NOT_FOUND,
+        );
       }
-      res.status(200).json({
+      return {
         success: true,
         data: project,
-        message: 'Project progress updated successfully'
-      });
+        message: 'Project progress updated successfully',
+      };
     } catch (error) {
-      logger.error(`Error updating project progress ${req.params.id}:`, error);
-      res.status(400).json({
-        success: false,
-        message: error instanceof Error ? error.message : 'Failed to update project progress'
-      });
+      throw new HttpException(
+        {
+          success: false,
+          message:
+            error instanceof Error
+              ? error.message
+              : 'Failed to update project progress',
+        },
+        HttpStatus.BAD_REQUEST,
+      );
     }
   }
 }

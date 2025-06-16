@@ -1,16 +1,16 @@
-import { Router } from 'express';
-import { ProjectController } from './controllers/project.controller';
-import { authenticate } from '../../middlewares/authenticate';
+// import { Router } from 'express';
+// import { ProjectController } from './controllers/project.controller';
+// import { authenticate } from '../../middlewares/authenticate';
 
-const router = Router();
-const controller = new ProjectController();
+// const router = Router();
+// const controller = new ProjectController();
 
-router.get('/', authenticate, controller.getAllProjects);
-router.get('/myprojects', authenticate, controller.getUserProjects);
+// router.get('/', authenticate, controller.getAllProjects);
+// router.get('/myprojects', authenticate, controller.getUserProjects);
 
-router.get('/:id', authenticate, controller.getProjectById);
-router.post('/', authenticate, controller.createProject);
-router.put('/:id', authenticate, controller.updateProject);
-router.delete('/:id', authenticate, controller.deleteProject);
+// router.get('/:id', authenticate, controller.getProjectById);
+// router.post('/', authenticate, controller.createProject);
+// router.put('/:id', authenticate, controller.updateProject);
+// router.delete('/:id', authenticate, controller.deleteProject);
 
-export default router;
+// export default router;

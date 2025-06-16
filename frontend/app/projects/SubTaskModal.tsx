@@ -39,6 +39,7 @@ interface SubtaskModalProps {
     title: string
     description: string
     assignee?: string
+    timeline: string
   }) => void
   trigger?: React.ReactNode
 }
@@ -122,8 +123,8 @@ export function SubtaskCreationModal({
           <div className="space-y-2">
             <Label>Assign To</Label>
             <Select 
-              value={assignee}
-              onValueChange={(value) => setAssignee(value || undefined)}
+              value={assignee ?? "unassigned"}
+              onValueChange={(value) => setAssignee(value === "unassigned" ? undefined : value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select assignee">
@@ -143,7 +144,7 @@ export function SubtaskCreationModal({
               <SelectContent>
                 {availableMembers.length > 0 ? (
                   <>
-                    <SelectItem value={undefined}>Unassigned</SelectItem>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
                     {availableMembers.map(member => (
                       <SelectItem key={member.id} value={member.id}>
                         <div className="flex items-center gap-2">
