@@ -5,7 +5,9 @@ export enum TaskStatus {
     IN_PROGRESS = 'in_progress',
     IN_REVIEW = 'in_review',
     DONE = 'done',
-    BLOCKED = 'blocked'
+    BLOCKED = 'blocked',
+    NOT_STARTED = 'NOT_STARTED',
+    COMPLETED = 'COMPLETED'
   }
   
   export enum TaskPriority {
@@ -26,3 +28,5 @@ export enum TaskStatus {
     PINK = '#ffc0cb',
     GRAY = '#808080'
   }
+
+  // src/modules/tasks/task.enum.ts

@@ -30,21 +30,18 @@ export class TaskService {
     });
   }
 
-  async create(createTaskDto: CreateTaskDto, reporterId: string): Promise<Task> {
+  async create(createTaskDto: CreateTaskDto): Promise<Task> {
     const project = await this.projectRepository.findOneBy({ id: createTaskDto.projectId });
-    const reporter = await this.userRepository.findOneBy({ id: reporterId });
-
-    if (!project || !reporter) {
-      throw new Error('Project or reporter not found');
+    if (!project) {
+      throw new Error('Project not found');
     }
 
     const task = this.taskRepository.create({
       ...createTaskDto,
-      project,
-      reporter,
       status: createTaskDto.status || TaskStatus.TODO,
       priority: createTaskDto.priority || TaskPriority.MEDIUM
     });
+    task.project = project;
 
     return this.taskRepository.save(task);
   }
@@ -68,7 +65,13 @@ export class TaskService {
 
     if (!task || !user) return null;
 
-    task.assignee = user;
+    if (!task.assignees) {
+      task.assignees = [];
+    }
+    // Add user to assignees if not already present
+    if (!task.assignees.find((u: User) => u.id === user.id)) {
+      task.assignees.push(user);
+    }
     return this.taskRepository.save(task);
   }
 }

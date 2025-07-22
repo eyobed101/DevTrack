@@ -21,10 +21,10 @@ export class Report {
   })
   status: ReportStatus;
 
-  @Column({ type: 'jsonb', nullable: true })
+  @Column({ type: 'json', nullable: true })
   filters: Record<string, any> | null;
 
-  @Column({ type: 'jsonb', nullable: true })
+  @Column({ type: 'json', nullable: true })
   data: any;
 
   @ManyToOne(() => Project)

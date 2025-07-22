@@ -7,13 +7,6 @@ export interface AnalyticsParams {
     endDate?: string;
   }
 
-export interface getTeamPerformanceMetrics {
-  userId: string;
-  projectId?: string;
-  startDate?: string;
-  endDate?: string;
-}
-
 export interface TaskTimeSummary {
   taskId: string | null;
   taskName: string;
@@ -54,3 +47,29 @@ export interface DailyTrend {
   created: number;
 }
 
+export interface BurndownChartData {
+    date: string;
+    ideal: number;
+    actual: number;
+    tasksRemaining: number;
+  }
+  
+  export interface TeamMemberContribution {
+    userId: string;
+    userName: string;
+    avatarUrl?: string;
+    hoursLogged: number;
+    tasksCompleted: number;
+    contributionPercentage: number;
+  }
+  
+  export interface TeamPerformanceMetrics {
+    teamVelocity: number;
+    burndown: BurndownChartData[];
+    individualContributions: TeamMemberContribution[];
+    completionRates: {
+      total: number;
+      completed: number;
+      percentage: number;
+    };
+  }

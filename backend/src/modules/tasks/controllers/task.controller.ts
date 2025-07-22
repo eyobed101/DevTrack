@@ -1,8 +1,7 @@
-// src/modules/tasks/task.controller.ts
 import { Request, Response } from 'express';
 import { validate } from '../../../middlewares/validator';
 import { TaskService } from '../task.service';
-import { CreateTaskDto, UpdateTaskDto } from '../task.dto';
+import { CreateTaskDto, UpdateTaskDto, AssignTaskDto } from '../task.dto';
 import { AppDataSource } from '../../../config/database';
 import { Task } from '../entities/task.entity';
 import { logger } from '../../../config/logger';
@@ -17,16 +16,25 @@ export class TaskController {
     const userRepository = AppDataSource.getRepository(User);
     const projectRepository = AppDataSource.getRepository(Project);
     this.taskService = new TaskService(taskRepository, userRepository, projectRepository);
+
+    this.getAllTasks = this.getAllTasks.bind(this);
+    this.getTaskById = this.getTaskById.bind(this);
+    this.createTask = this.createTask.bind(this);
+    this.updateTask = this.updateTask.bind(this);
+    this.deleteTask = this.deleteTask.bind(this);
+    this.assignTask = this.assignTask.bind(this);
   }
 
   async getAllTasks(req: Request, res: Response): Promise<void> {
     try {
-      const { page = 1, limit = 10, projectId } = req.query;
+      const { page = 1, limit = 10, projectId, status } = req.query;
+      
       const tasks = await this.taskService.findAll(
         parseInt(page as string),
         parseInt(limit as string),
         projectId as string | undefined
       );
+      
       res.status(200).json({
         success: true,
         data: tasks,
@@ -68,17 +76,28 @@ export class TaskController {
     }
   }
 
-//   @validate(CreateTaskDto)
+  // @validate(CreateTaskDto)
   async createTask(req: Request, res: Response): Promise<void> {
     try {
-      if (!req.user || typeof req.user.id !== 'number') {
+      if (!req.user || !req.user.id) {
         res.status(400).json({
           success: false,
           message: 'Invalid user information'
         });
         return;
       }
-      const task = await this.taskService.create(req.body, req.user.id.toString());
+      
+      // Prepare task data with proper types
+      const taskData = {
+        ...req.body,
+        dueDate: req.body.dueDate ? new Date(req.body.dueDate) : null,
+        estimatedHours: req.body.estimatedHours ? parseFloat(req.body.estimatedHours) : null,
+        labels: req.body.labels ? 
+          (Array.isArray(req.body.labels) ? req.body.labels : [req.body.labels]) 
+          : []
+      };
+
+      const task = await this.taskService.create(taskData);
       res.status(201).json({
         success: true,
         data: task,
@@ -93,10 +112,20 @@ export class TaskController {
     }
   }
 
-//   @validate(UpdateTaskDto)
+  // @validate(UpdateTaskDto)
   async updateTask(req: Request, res: Response): Promise<void> {
     try {
-      const task = await this.taskService.update(req.params.id, req.body);
+      const updateData = {
+        ...req.body,
+        dueDate: req.body.dueDate ? new Date(req.body.dueDate) : undefined,
+        estimatedHours: req.body.estimatedHours ? parseFloat(req.body.estimatedHours) : undefined,
+        actualHours: req.body.actualHours ? parseFloat(req.body.actualHours) : undefined,
+        labels: req.body.labels ? 
+          (Array.isArray(req.body.labels) ? req.body.labels : [req.body.labels]) 
+          : undefined
+      };
+
+      const task = await this.taskService.update(req.params.id, updateData);
       if (!task) {
         res.status(404).json({
           success: false,
@@ -141,10 +170,24 @@ export class TaskController {
     }
   }
 
+  // @validate(AssignTaskDto)
   async assignTask(req: Request, res: Response): Promise<void> {
     try {
-      const { userId } = req.body;
-      const task = await this.taskService.assignTask(req.params.id, userId);
+      const { userId, teamLeaderId } = req.body;
+      
+      if (!userId && !teamLeaderId) {
+        res.status(400).json({
+          success: false,
+          message: 'Must provide at least one user ID (assignee or team leader)'
+        });
+        return;
+      }
+      
+      const task = await this.taskService.assignTask(
+        req.params.id, 
+        userId
+      );
+      
       if (!task) {
         res.status(404).json({
           success: false,
@@ -152,10 +195,11 @@ export class TaskController {
         });
         return;
       }
+      
       res.status(200).json({
         success: true,
         data: task,
-        message: 'Task assigned successfully'
+        message: 'Task assignment updated successfully'
       });
     } catch (error) {
       logger.error(`Error assigning task ${req.params.id}:`, error);

@@ -23,6 +23,10 @@ export class AnalyticsController {
       userRepository,
     
     );
+    this.getProductivityAnalytics = this.getProductivityAnalytics.bind(this);
+    this.getTimeTrackingAnalytics = this.getTimeTrackingAnalytics.bind(this);
+    this.getTeamPerformance = this.getTeamPerformance.bind(this);
+    
   }
 
 //   @authenticate

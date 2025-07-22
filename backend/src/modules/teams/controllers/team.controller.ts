@@ -15,6 +15,14 @@ export class TeamController {
     const teamRepository = AppDataSource.getRepository(Team);
     const userRepository = AppDataSource.getRepository(User);
     this.teamService = new TeamService(teamRepository, userRepository);
+
+    this.getAllTeams = this.getAllTeams.bind(this);
+    this.getTeamById = this.getTeamById.bind(this);
+    this.createTeam = this.createTeam.bind(this);
+    this.updateTeam = this.updateTeam.bind(this);
+    this.deleteTeam = this.deleteTeam.bind(this);
+    this.addTeamMember = this.addTeamMember.bind(this);
+    
   }
 
   async getAllTeams(req: Request, res: Response): Promise<void> {
@@ -74,7 +82,7 @@ export class TeamController {
         });
          return;
       }
-      const team = await this.teamService.create(req.body, req.user.id.toString());
+      const team = await this.teamService.create(req.body, req.user.id);
        res.status(201).json({
         success: true,
         data: team,

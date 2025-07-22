@@ -1,5 +1,14 @@
 // src/modules/users/entities/user.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn, ManyToMany, JoinTable, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToOne,
+  JoinColumn,
+  ManyToMany,
+  JoinTable,
+  OneToMany
+} from 'typeorm';
 import { Role } from '../../auth/entities/role.entity';
 import { UserPreferences } from './user-preferences.entity';
 import { TeamMember } from '../../teams/entities/team-member.entity';
@@ -8,22 +17,38 @@ import { Project } from '../../projects/entities/project.entity';
 import { ProjectMember } from '../../projects/entities/project-member.entity';
 import { Notification } from '../../notifications/entities/notification.entity';
 import { Task } from '../../tasks/entities/task.entity';
+import { ProjectUpdate } from '../../projects/entities/project-update.entity'; // Add this
+import { ProjectFile } from '../../projects/entities/project-file.entity'; // Add this
+import { Subtask } from '../../tasks/entities/subtask.entity';
+import { RefreshToken } from '../../auth/entities/refresh-token.entity';
 
 @Entity()
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ unique: true })
+  username: string;
+
+  @Column({ nullable: true })
   firstName: string;
 
-  @Column()
+
+  @Column({ nullable: true })
   lastName: string;
 
   @Column({ unique: true })
   email: string;
 
-  @Column()
+  @Column({
+  length: 100,
+  charset: 'utf8mb4',
+  collation: 'utf8mb4_bin',
+  transformer: {
+    to: (value: string) => value,
+    from: (value: string) => value
+  }
+  })
   password: string;
 
   @Column({ nullable: true })
@@ -44,6 +69,19 @@ export class User {
   @Column({ default: true })
   isActive: boolean;
 
+  @Column({ default: false })
+  isEmailVerified: boolean;
+
+  @Column({ type: 'varchar', nullable: true })
+  verificationToken: string | null;
+
+
+  @Column({ type: 'varchar', nullable: true })
+  resetPasswordToken: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  resetPasswordExpires: Date | null;
+
   @OneToMany(() => Notification, notification => notification.recipient)
   notifications: Notification[];
 
@@ -59,20 +97,37 @@ export class User {
   @OneToMany(() => TeamMember, teamMember => teamMember.user)
   teamMemberships: TeamMember[];
 
-  @OneToMany(() => Task, (task) => task.assignee)
+  @ManyToMany(() => Task, (task) => task.assignees)
   assignedTasks: Task[];
 
-  @OneToMany(() => Task, (task) => task.reporter)
-  reportedTasks: Task[];
+  // Corrected team leader relationship
+  @OneToMany(() => Task, (task) => task.teamLeader)
+  teamLeaderTasks: Task[];
 
 
-  @ManyToMany(() => Role, role => role.users)
+
+  @ManyToMany(() => Role, (role: Role) => role.users)
   @JoinTable()
   roles: Role[];
 
   @OneToOne(() => UserPreferences)
   @JoinColumn()
   preferences: UserPreferences;
+
+
+
+  @OneToMany(() => Subtask, (subtask) => subtask.assignee)
+  assignedSubtasks: Subtask[];
+
+  // Add these new relationships
+  @OneToMany(() => ProjectUpdate, update => update.author)
+  projectUpdates: ProjectUpdate[];
+
+  @OneToMany(() => ProjectFile, file => file.uploadedBy)
+  projectFiles: ProjectFile[];
+
+  @OneToMany(() => RefreshToken, (token) => token.user)
+  refreshTokens: RefreshToken[];
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;

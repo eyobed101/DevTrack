@@ -6,13 +6,21 @@ import { CreateUserDto, UpdateUserDto } from '../user.dto';
 import { AppDataSource } from '../../../config/database';
 import { User } from '../entities/user.entity';
 import { logger } from '../../../config/logger';
+import { Controller } from '@nestjs/common';
 
+@Controller('user')
 export class UserController {
   private userService: UserService;
 
   constructor() {
     const userRepository = AppDataSource.getRepository(User);
     this.userService = new UserService(userRepository);
+
+    this.getAllUsers = this.getAllUsers.bind(this);
+    this.getUserById = this.getUserById.bind(this);
+    this.createUser = this.createUser.bind(this);
+    this.updateUser = this.updateUser.bind(this);
+    this.deleteUser = this.deleteUser.bind(this);
   }
 
   async getAllUsers(req: Request, res: Response): Promise<void> {
