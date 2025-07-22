@@ -37,6 +37,11 @@ interface User {
     email: string
     avatar?: string
 }
+interface DocumentRepositoryPageProps {
+  params: {
+    id: string
+  }
+}
 
 interface Resource {
     id: string
@@ -102,7 +107,8 @@ const mockResources: Resource[] = [
     },
 ]
 
-export default function DocumentRepositoryPage({ params }: { params: { id: string } }) {
+    export default function DocumentRepositoryPage({ params }: DocumentRepositoryPageProps) {
+
     const [searchTerm, setSearchTerm] = useState('')
     const [currentFolder, setCurrentFolder] = useState<Resource | null>(null)
     const [selectedUsers, setSelectedUsers] = useState<string[]>([])
